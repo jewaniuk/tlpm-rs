@@ -214,4 +214,49 @@ impl PowerMeter {
         f64,
         "energy reference value"
     );
+
+    /// Trigger a power range search to automatically find the optimal power measurement range.
+    ///
+    /// # Arguments
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_power_range_search(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting power range search on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setPowerRangeSearch(self.session, channel) },
+            "set_power_range_search",
+        )
+    }
+
+    /// Trigger a current range search to automatically find the optimal current measurement range.
+    ///
+    /// # Arguments
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_current_range_search(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting current range search on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setCurrentRangeSearch(self.session, channel) },
+            "set_current_range_search",
+        )
+    }
+
+    /// Trigger a voltage range search to automatically find the optimal voltage measurement range.
+    ///
+    /// # Arguments
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_voltage_range_search(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting voltage range search on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setVoltageRangeSearch(self.session, channel) },
+            "set_voltage_range_search",
+        )
+    }
 }

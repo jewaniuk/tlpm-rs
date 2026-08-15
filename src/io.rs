@@ -492,4 +492,172 @@ impl PowerMeter {
         )?;
         Ok((min, max))
     }
+
+    /// Read the overall Pass/Fail state.
+    pub fn get_pass_fail_state(&self, channel: u16) -> Result<bool, TlpmError> {
+        tracing::debug!("getting pass/fail state on channel {}", channel);
+        let mut state: sys::ViUInt16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getPassFailState(self.session, &mut state, channel) },
+            "get_pass_fail_state",
+        )?;
+        Ok(state != 0)
+    }
+
+    impl_property!(
+        numeric,
+        channel,
+        set_analog_output_config,
+        get_analog_output_config,
+        TLPMX_setAnalogOutputConfig,
+        TLPMX_getAnalogOutputConfig,
+        i16,
+        "analog output config"
+    );
+
+    impl_property!(
+        numeric,
+        channel,
+        set_analog_output_gain_range,
+        get_analog_output_gain_range,
+        TLPMX_setAnalogOutputGainRange,
+        TLPMX_getAnalogOutputGainRange,
+        i16,
+        "analog output gain range"
+    );
+
+    /// Set the direction (Input/Output) for all 4 Digital IO pins simultaneously.
+    pub fn set_dig_io_direction(
+        &self,
+        io0: bool,
+        io1: bool,
+        io2: bool,
+        io3: bool,
+    ) -> Result<(), TlpmError> {
+        let c0 = if io0 { VI_TRUE } else { VI_FALSE };
+        let c1 = if io1 { VI_TRUE } else { VI_FALSE };
+        let c2 = if io2 { VI_TRUE } else { VI_FALSE };
+        let c3 = if io3 { VI_TRUE } else { VI_FALSE };
+        self.check_status(
+            unsafe { sys::TLPMX_setDigIoDirection(self.session, c0, c1, c2, c3) },
+            "set_dig_io_direction",
+        )
+    }
+
+    /// Get the direction (Input/Output) for all 4 Digital IO pins.
+    /// Returns a tuple: (io0, io1, io2, io3) where true = Output, false = Input.
+    pub fn get_dig_io_direction(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        let mut io0: sys::ViBoolean = 0;
+        let mut io1: sys::ViBoolean = 0;
+        let mut io2: sys::ViBoolean = 0;
+        let mut io3: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getDigIoDirection(self.session, &mut io0, &mut io1, &mut io2, &mut io3)
+            },
+            "get_dig_io_direction",
+        )?;
+        Ok((
+            io0 == VI_TRUE,
+            io1 == VI_TRUE,
+            io2 == VI_TRUE,
+            io3 == VI_TRUE,
+        ))
+    }
+
+    /// Set the output logic state for all 4 Digital IO pins simultaneously.
+    pub fn set_dig_io_output(
+        &self,
+        io0: bool,
+        io1: bool,
+        io2: bool,
+        io3: bool,
+    ) -> Result<(), TlpmError> {
+        let c0 = if io0 { VI_TRUE } else { VI_FALSE };
+        let c1 = if io1 { VI_TRUE } else { VI_FALSE };
+        let c2 = if io2 { VI_TRUE } else { VI_FALSE };
+        let c3 = if io3 { VI_TRUE } else { VI_FALSE };
+        self.check_status(
+            unsafe { sys::TLPMX_setDigIoOutput(self.session, c0, c1, c2, c3) },
+            "set_dig_io_output",
+        )
+    }
+
+    /// Get the actual physical logic state of all 4 Digital IO port pins.
+    pub fn get_dig_io_port(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        let mut io0: sys::ViBoolean = 0;
+        let mut io1: sys::ViBoolean = 0;
+        let mut io2: sys::ViBoolean = 0;
+        let mut io3: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getDigIoPort(self.session, &mut io0, &mut io1, &mut io2, &mut io3)
+            },
+            "get_dig_io_port",
+        )?;
+        Ok((
+            io0 == VI_TRUE,
+            io1 == VI_TRUE,
+            io2 == VI_TRUE,
+            io3 == VI_TRUE,
+        ))
+    }
+
+    /// Set the output logic state for all 4 Digital IO pins (Alternative function).
+    pub fn set_dig_io_pin_output(
+        &self,
+        io0: bool,
+        io1: bool,
+        io2: bool,
+        io3: bool,
+    ) -> Result<(), TlpmError> {
+        let c0 = if io0 { VI_TRUE } else { VI_FALSE };
+        let c1 = if io1 { VI_TRUE } else { VI_FALSE };
+        let c2 = if io2 { VI_TRUE } else { VI_FALSE };
+        let c3 = if io3 { VI_TRUE } else { VI_FALSE };
+        self.check_status(
+            unsafe { sys::TLPMX_setDigIoPinOutput(self.session, c0, c1, c2, c3) },
+            "set_dig_io_pin_output",
+        )
+    }
+
+    /// Get the configured output logic state of all 4 Digital IO pins.
+    pub fn get_dig_io_pin_output(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        let mut io0: sys::ViBoolean = 0;
+        let mut io1: sys::ViBoolean = 0;
+        let mut io2: sys::ViBoolean = 0;
+        let mut io3: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getDigIoPinOutput(self.session, &mut io0, &mut io1, &mut io2, &mut io3)
+            },
+            "get_dig_io_pin_output",
+        )?;
+        Ok((
+            io0 == VI_TRUE,
+            io1 == VI_TRUE,
+            io2 == VI_TRUE,
+            io3 == VI_TRUE,
+        ))
+    }
+
+    /// Get the logic state of all 4 Digital IO input pins.
+    pub fn get_dig_io_pin_input(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        let mut io0: sys::ViBoolean = 0;
+        let mut io1: sys::ViBoolean = 0;
+        let mut io2: sys::ViBoolean = 0;
+        let mut io3: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getDigIoPinInput(self.session, &mut io0, &mut io1, &mut io2, &mut io3)
+            },
+            "get_dig_io_pin_input",
+        )?;
+        Ok((
+            io0 == VI_TRUE,
+            io1 == VI_TRUE,
+            io2 == VI_TRUE,
+            io3 == VI_TRUE,
+        ))
+    }
 }

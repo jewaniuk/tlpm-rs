@@ -120,4 +120,62 @@ impl PowerMeter {
         )?;
         Ok(value)
     }
+
+    /// Read the X and Y positions from a 4-Quadrant detector.
+    ///
+    /// # Returns
+    /// A tuple containing `(x_pos, y_pos)`.
+    pub fn meas_4q_positions(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        let mut x: f64 = 0.0;
+        let mut y: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_meas4QPositions(self.session, &mut x, &mut y, channel) },
+            "meas_4q_positions",
+        )?;
+        Ok((x, y))
+    }
+
+    /// Read the four individual quadrant voltages from a 4-Quadrant detector.
+    ///
+    /// # Returns
+    /// A tuple containing `(voltage1, voltage2, voltage3, voltage4)`.
+    pub fn meas_4q_voltages(&self, channel: u16) -> Result<(f64, f64, f64, f64), TlpmError> {
+        let mut v1: f64 = 0.0;
+        let mut v2: f64 = 0.0;
+        let mut v3: f64 = 0.0;
+        let mut v4: f64 = 0.0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_meas4QVoltages(self.session, &mut v1, &mut v2, &mut v3, &mut v4, channel)
+            },
+            "meas_4q_voltages",
+        )?;
+        Ok((v1, v2, v3, v4))
+    }
+
+    /// Measure both channels simultaneously on a dual-channel meter.
+    ///
+    /// # Arguments
+    /// * `measurement_unit` - The unit to measure (e.g., 0 for Power, 1 for Current, 2 for Voltage).
+    pub fn meas_dual_channel_simultaneous(
+        &self,
+        measurement_unit: u16,
+    ) -> Result<(f64, f64), TlpmError> {
+        let mut val1: f64 = 0.0;
+        let mut val2: f64 = 0.0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measDualChannelSimultaneous(
+                    self.session,
+                    measurement_unit,
+                    &mut val1,
+                    &mut val2,
+                )
+            },
+            "meas_dual_channel_simultaneous",
+        )?;
+        Ok((val1, val2))
+    }
 }

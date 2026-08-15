@@ -109,4 +109,25 @@ impl PowerMeter {
         )?;
         Ok(closed == VI_TRUE)
     }
+
+    impl_property!(
+        numeric,
+        channel,
+        set_input_adapter_type,
+        get_input_adapter_type,
+        TLPMX_setInputAdapterType,
+        TLPMX_getInputAdapterType,
+        i16,
+        "input adapter type"
+    );
+
+    /// Check if the Peak Detector is currently running.
+    pub fn is_peak_detector_running(&self, channel: u16) -> Result<bool, TlpmError> {
+        let mut is_running: sys::ViUInt16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_isPeakDetectorRunning(self.session, &mut is_running, channel) },
+            "is_peak_detector_running",
+        )?;
+        Ok(is_running != 0)
+    }
 }
