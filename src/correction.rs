@@ -112,4 +112,81 @@ impl PowerMeter {
         // sys::TLPM_STAT_DARK_ADJUST_RUNNING is 1, TLPM_STAT_DARK_ADJUST_FINISHED is 0
         Ok(state == sys::TLPM_STAT_DARK_ADJUST_RUNNING as i16)
     }
+
+    /// Cancel an actively running dark adjustment.
+    pub fn cancel_dark_adjust(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("canceling dark adjust on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_cancelDarkAdjust(self.session, channel) },
+            "cancel_dark_adjust",
+        )
+    }
+
+    impl_property!(
+        numeric,
+        channel,
+        set_dark_offset,
+        get_dark_offset,
+        TLPMX_setDarkOffset,
+        TLPMX_getDarkOffset,
+        f64,
+        "dark offset"
+    );
+
+    /// Set the X and Y zero position offsets (e.g., for position-sensing detectors).
+    ///
+    /// # Arguments
+    /// * `position_x` - The X-axis zero position.
+    /// * `position_y` - The Y-axis zero position.
+    /// * `channel` - The sensor channel (typically `1`).
+    pub fn set_zero_pos(
+        &self,
+        position_x: f64,
+        position_y: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting zero position (x: {}, y: {}) on channel {}",
+            position_x,
+            position_y,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_setZeroPos(self.session, position_x, position_y, channel) },
+            "set_zero_pos",
+        )
+    }
+
+    /// Read the current X and Y zero position offsets.
+    ///
+    /// # Returns
+    /// A tuple containing `(position_x, position_y)`.
+    pub fn get_zero_pos(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting zero position on channel {}", channel);
+        let mut pos_x: f64 = 0.0;
+        let mut pos_y: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getZeroPos(self.session, &mut pos_x, &mut pos_y, channel) },
+            "get_zero_pos",
+        )?;
+        Ok((pos_x, pos_y))
+    }
+
+    /// Start a zero position measurement.
+    pub fn start_zero_pos(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("starting zero position measurement on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_startZeroPos(self.session, channel) },
+            "start_zero_pos",
+        )
+    }
+
+    /// Cancel an actively running zero position measurement.
+    pub fn cancel_zero_pos(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("canceling zero position measurement on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_cancelZeroPos(self.session, channel) },
+            "cancel_zero_pos",
+        )
+    }
 }

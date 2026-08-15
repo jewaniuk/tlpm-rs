@@ -88,7 +88,46 @@ macro_rules! impl_property {
         }
     };
 
-    // 3. numeric properties that require an attribute and a channel
+    // 3. numeric properties that require a channel but no attribute
+    (numeric, channel, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
+        #[doc = concat!("Set the ", $doc_name, ".")]
+        ///
+        /// # Arguments
+        /// * `value` - The new numeric value to apply.
+        /// * `channel` - The sensor channel (typically `1`).
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $setter_name(&self, value: $ty, channel: u16) -> Result<(), TlpmError> {
+            tracing::debug!(concat!("setting ", $doc_name, " on channel {}"), channel);
+            self.check_status(
+                unsafe { sys::$sys_setter(self.session, value, channel) },
+                stringify!($setter_name),
+            )
+        }
+
+        #[doc = concat!("Get the ", $doc_name, ".")]
+        ///
+        /// # Arguments
+        /// * `channel` - The sensor channel (typically `1`).
+        ///
+        /// # Returns
+        /// The queried numeric value.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $getter_name(&self, channel: u16) -> Result<$ty, TlpmError> {
+            tracing::debug!(concat!("getting ", $doc_name, " on channel {}"), channel);
+            let mut value: $ty = Default::default();
+            self.check_status(
+                unsafe { sys::$sys_getter(self.session, &mut value, channel) },
+                stringify!($getter_name),
+            )?;
+            Ok(value)
+        }
+    };
+
+    // 4. numeric properties that require an attribute and a channel
     (numeric, attr_channel, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
         #[doc = concat!("Set the ", $doc_name, ".")]
         ///
@@ -132,7 +171,7 @@ macro_rules! impl_property {
         }
     };
 
-    // 4. simple numeric global properties (no attribute, no channel)
+    // 5. simple numeric global properties (no attribute, no channel)
     (numeric, global, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
         #[doc = concat!("Set the ", $doc_name, ".")]
         ///
@@ -167,7 +206,7 @@ macro_rules! impl_property {
         }
     };
 
-    // 5. string global properties (network and hostname configurations)
+    // 6. string global properties (network and hostname configurations)
     (string, global, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $doc_name:expr) => {
         #[doc = concat!("Set the ", $doc_name, ".")]
         ///

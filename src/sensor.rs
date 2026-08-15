@@ -1,5 +1,5 @@
 use crate::error::TlpmError;
-use crate::{PowerMeter, sys};
+use crate::{PowerMeter, VI_TRUE, sys};
 use std::ffi::CStr;
 
 impl PowerMeter {
@@ -72,5 +72,41 @@ impl PowerMeter {
         )?;
         let c_str = unsafe { CStr::from_ptr(message.as_ptr()) };
         Ok(c_str.to_string_lossy().into_owned())
+    }
+
+    pub fn is_sensor_connected(&self, channel: u16) -> Result<bool, TlpmError> {
+        let mut connected: sys::ViUInt16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_isSensorConnected(self.session, &mut connected, channel) },
+            "is_sensor_connected",
+        )?;
+        Ok(connected != 0)
+    }
+
+    pub fn is_emm_connected(&self) -> Result<bool, TlpmError> {
+        let mut connected: sys::ViUInt16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_isEmmConnected(self.session, &mut connected) },
+            "is_emm_connected",
+        )?;
+        Ok(connected != 0)
+    }
+
+    pub fn is_ext_ntc_connected(&self, channel: u16) -> Result<bool, TlpmError> {
+        let mut connected: sys::ViUInt16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_isExtNtcConnected(self.session, &mut connected, channel) },
+            "is_ext_ntc_connected",
+        )?;
+        Ok(connected != 0)
+    }
+
+    pub fn get_shutter_interlock(&self) -> Result<bool, TlpmError> {
+        let mut closed: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getShutterInterlock(self.session, &mut closed) },
+            "get_shutter_interlock",
+        )?;
+        Ok(closed == VI_TRUE)
     }
 }

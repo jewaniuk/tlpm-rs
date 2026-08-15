@@ -1,4 +1,4 @@
-use crate::enums::{AnalogRoute, DigIoPinMode, FanMode, FanTempSource};
+use crate::enums::{AnalogRoute, DigIoPinMode, FanMode, FanTempSource, TlpmAttribute};
 use crate::error::TlpmError;
 use crate::{PowerMeter, VI_FALSE, VI_TRUE, sys};
 use std::ffi::CStr;
@@ -376,5 +376,120 @@ impl PowerMeter {
             "get_laser_state",
         )?;
         Ok(state == VI_TRUE)
+    }
+
+    impl_property!(
+        numeric,
+        attr_channel,
+        set_analog_output_slope,
+        get_analog_output_slope,
+        TLPMX_setAnalogOutputSlope,
+        TLPMX_getAnalogOutputSlope,
+        f64,
+        "analog output slope"
+    );
+
+    impl_property!(
+        numeric,
+        attr_channel,
+        set_position_analog_output_slope,
+        get_position_analog_output_slope,
+        TLPMX_setPositionAnalogOutputSlope,
+        TLPMX_getPositionAnalogOutputSlope,
+        f64,
+        "position analog output slope"
+    );
+
+    /// Set the analog logarithmic output configuration.
+    ///
+    /// # Arguments
+    /// * `log_slope` - The slope of the logarithmic output.
+    /// * `log_offset` - The offset of the logarithmic output.
+    /// * `channel` - The sensor channel (typically `1`).
+    pub fn set_analog_log_conf(
+        &self,
+        log_slope: f64,
+        log_offset: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting analog log config (slope: {}, offset: {}) on channel {}",
+            log_slope,
+            log_offset,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_setAnalogLogConf(self.session, log_slope, log_offset, channel) },
+            "set_analog_log_conf",
+        )
+    }
+
+    /// Read the currently configured analog logarithmic output settings.
+    ///
+    /// # Returns
+    /// A tuple containing `(log_slope, log_offset)`.
+    pub fn get_analog_log_conf(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting analog log config on channel {}", channel);
+        let mut log_slope: f64 = 0.0;
+        let mut log_offset: f64 = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getAnalogLogConf(self.session, &mut log_slope, &mut log_offset, channel)
+            },
+            "get_analog_log_conf",
+        )?;
+        Ok((log_slope, log_offset))
+    }
+
+    /// Set the Pass/Fail power window limits.
+    pub fn set_pass_fail_power_window(
+        &self,
+        min: f64,
+        max: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting pass/fail power window on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setPassFailPowerWindow(self.session, min, max, channel) },
+            "set_pass_fail_power_window",
+        )
+    }
+
+    /// Retrieve the Pass/Fail power window limits.
+    pub fn get_pass_fail_power_window(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        let mut min: f64 = 0.0;
+        let mut max: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getPassFailPowerWindow(self.session, &mut min, &mut max, channel) },
+            "get_pass_fail_power_window",
+        )?;
+        Ok((min, max))
+    }
+
+    /// Set the Pass/Fail energy window limits.
+    pub fn set_pass_fail_energy_window(
+        &self,
+        min: f64,
+        max: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting pass/fail energy window on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setPassFailEnergyWindow(self.session, min, max, channel) },
+            "set_pass_fail_energy_window",
+        )
+    }
+
+    /// Retrieve the Pass/Fail energy window limits.
+    pub fn get_pass_fail_energy_window(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        let mut min: f64 = 0.0;
+        let mut max: f64 = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPassFailEnergyWindow(self.session, &mut min, &mut max, channel)
+            },
+            "get_pass_fail_energy_window",
+        )?;
+        Ok((min, max))
     }
 }

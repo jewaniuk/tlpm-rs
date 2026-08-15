@@ -121,4 +121,79 @@ impl PowerMeter {
 
         PeakFilter::try_from(filter_code)
     }
+
+    impl_property!(
+        numeric,
+        channel,
+        set_avg_cnt,
+        get_avg_cnt,
+        TLPMX_setAvgCnt,
+        TLPMX_getAvgCnt,
+        i16,
+        "average count"
+    );
+
+    impl_property!(
+        numeric,
+        attr_channel,
+        set_accel_tau,
+        get_accel_tau,
+        TLPMX_setAccelTau,
+        TLPMX_getAccelTau,
+        f64,
+        "acceleration tau"
+    );
+
+    impl_property!(
+        numeric,
+        channel,
+        set_accel_mode,
+        get_accel_mode,
+        TLPMX_setAccelMode,
+        TLPMX_getAccelMode,
+        u16,
+        "acceleration mode"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_filter_position,
+        get_filter_position,
+        TLPMX_setFilterPosition,
+        TLPMX_getFilterPosition,
+        u16,
+        "filter position"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_filter_auto_mode,
+        get_filter_auto_mode,
+        TLPMX_setFilterAutoMode,
+        TLPMX_getFilterAutoMode,
+        "filter auto mode"
+    );
+
+    impl_property!(
+        numeric,
+        attr_channel,
+        set_peak_threshold,
+        get_peak_threshold,
+        TLPMX_setPeakThreshold,
+        TLPMX_getPeakThreshold,
+        f64,
+        "peak threshold"
+    );
+
+    impl_property!(
+        bool,
+        channel,
+        set_thermopile_pulse_integrator,
+        get_thermopile_pulse_integrator,
+        TLPMX_setThermopilePulseIntegrator,
+        TLPMX_getThermopilePulseIntegrator,
+        "thermopile pulse integrator state"
+    );
 }
