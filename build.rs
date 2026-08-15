@@ -38,10 +38,10 @@ fn main() {
         .clang_arg(format!("-I{}", include_dir.display()))
         .clang_arg("-DBUILDING_DEBUG_EXE")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        // restrict bindings to just the thorlabs and visa prefixes to keep the file size manageable
         .allowlist_function("TLPMX_.*")
         .allowlist_type("Vi.*")
         .allowlist_var("TLPM.*")
+        .allowlist_var("SENSOR_.*")
         .generate()
         .expect("unable to generate TLPMX bindings");
 
