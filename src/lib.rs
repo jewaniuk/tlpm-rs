@@ -263,6 +263,119 @@ impl PowerMeter {
         Ok(power)
     }
 
+    /// Read the current electrical current from the connected sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel to read from (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The measured current in Amperes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn meas_current(&self, channel: u16) -> Result<f64, TlpmError> {
+        tracing::debug!("measuring current on channel {}", channel);
+        let mut current: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_measCurrent(self.session, &mut current, channel) },
+            "meas_current",
+        )?;
+        Ok(current)
+    }
+
+    /// Read the current voltage from the connected sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel to read from (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The measured voltage in Volts.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn meas_voltage(&self, channel: u16) -> Result<f64, TlpmError> {
+        tracing::debug!("measuring voltage on channel {}", channel);
+        let mut voltage: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_measVoltage(self.session, &mut voltage, channel) },
+            "meas_voltage",
+        )?;
+        Ok(voltage)
+    }
+
+    /// Read the pulse energy from the connected sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel to read from (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The measured energy in Joules.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn meas_energy(&self, channel: u16) -> Result<f64, TlpmError> {
+        tracing::debug!("measuring energy on channel {}", channel);
+        let mut energy: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_measEnergy(self.session, &mut energy, channel) },
+            "meas_energy",
+        )?;
+        Ok(energy)
+    }
+
+    /// Initiate the dark current/zero adjustment procedure.
+    ///
+    /// This process measures the dark current of the sensor and stores it for
+    /// subsequent measurements. The laser beam should be blocked before calling this.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel to adjust (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn start_dark_adjust(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("starting dark adjust on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_startDarkAdjust(self.session, channel) },
+            "start_dark_adjust",
+        )
+    }
+
+    /// Check the state of the dark adjustment procedure.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel to check (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// `true` if the adjustment is currently running, `false` if it is finished.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_dark_adjust_state(&self, channel: u16) -> Result<bool, TlpmError> {
+        tracing::debug!("getting dark adjust state on channel {}", channel);
+        let mut state: i16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getDarkAdjustState(self.session, &mut state, channel) },
+            "get_dark_adjust_state",
+        )?;
+        // sys::TLPM_STAT_DARK_ADJUST_RUNNING is 1, TLPM_STAT_DARK_ADJUST_FINISHED is 0
+        Ok(state == sys::TLPM_STAT_DARK_ADJUST_RUNNING as i16)
+    }
+
     // helper method to translate a visa status into a rust result with context
     fn check_status(&self, status: sys::ViStatus, action: &str) -> Result<(), TlpmError> {
         if status < 0 {
@@ -300,23 +413,24 @@ impl PowerMeter {
         c_str.to_string_lossy().into_owned()
     }
 
-    // --- macro invocations for configuration methods ---
+    // =======================================================================
+    // input and averaging configuration
+    // =======================================================================
 
     impl_bool_property!(
-        set_power_auto_range,
-        get_power_auto_range,
-        TLPMX_setPowerAutoRange,
-        TLPMX_getPowerAutorange,
-        "power auto-range"
+        set_input_filter_state,
+        get_input_filter_state,
+        TLPMX_setInputFilterState,
+        TLPMX_getInputFilterState,
+        "input filter state"
     );
 
-    impl_numeric_property!(
-        set_power_range,
-        get_power_range,
-        TLPMX_setPowerRange,
-        TLPMX_getPowerRange,
-        f64,
-        "power_range"
+    impl_bool_property!(
+        set_accel_state,
+        get_accel_state,
+        TLPMX_setAccelState,
+        TLPMX_getAccelState,
+        "acceleration state"
     );
 
     impl_numeric_property!(
@@ -326,6 +440,216 @@ impl PowerMeter {
         TLPMX_getAvgTime,
         f64,
         "averaging time"
+    );
+
+    // =======================================================================
+    // corrections and responsivity configuration
+    // =======================================================================
+
+    impl_numeric_property!(
+        set_wavelength,
+        get_wavelength,
+        TLPMX_setWavelength,
+        TLPMX_getWavelength,
+        f64,
+        "wavelength"
+    );
+
+    impl_numeric_property!(
+        set_attenuation,
+        get_attenuation,
+        TLPMX_setAttenuation,
+        TLPMX_getAttenuation,
+        f64,
+        "attenuation"
+    );
+
+    impl_numeric_property!(
+        set_beam_dia,
+        get_beam_dia,
+        TLPMX_setBeamDia,
+        TLPMX_getBeamDia,
+        f64,
+        "beam diameter"
+    );
+
+    impl_numeric_property!(
+        set_photodiode_responsivity,
+        get_photodiode_responsivity,
+        TLPMX_setPhotodiodeResponsivity,
+        TLPMX_getPhotodiodeResponsivity,
+        f64,
+        "photodiode responsivity"
+    );
+
+    impl_numeric_property!(
+        set_thermopile_responsivity,
+        get_thermopile_responsivity,
+        TLPMX_setThermopileResponsivity,
+        TLPMX_getThermopileResponsivity,
+        f64,
+        "thermopile responsivity"
+    );
+
+    impl_numeric_property!(
+        set_pyrosensor_responsivity,
+        get_pyrosensor_responsivity,
+        TLPMX_setPyrosensorResponsivity,
+        TLPMX_getPyrosensorResponsivity,
+        f64,
+        "pyrosensor responsivity"
+    );
+
+    // =======================================================================
+    // power measurement configuration
+    // =======================================================================
+
+    impl_bool_property!(
+        set_power_auto_range,
+        get_power_auto_range,
+        TLPMX_setPowerAutoRange,
+        TLPMX_getPowerAutorange,
+        "power auto-range mode"
+    );
+
+    impl_numeric_property!(
+        set_power_range,
+        get_power_range,
+        TLPMX_setPowerRange,
+        TLPMX_getPowerRange,
+        f64,
+        "power range"
+    );
+
+    impl_bool_property!(
+        set_power_ref_state,
+        get_power_ref_state,
+        TLPMX_setPowerRefState,
+        TLPMX_getPowerRefState,
+        "power reference state"
+    );
+
+    impl_numeric_property!(
+        set_power_ref,
+        get_power_ref,
+        TLPMX_setPowerRef,
+        TLPMX_getPowerRef,
+        f64,
+        "power reference value"
+    );
+
+    // =======================================================================
+    // current measurement configuration
+    // =======================================================================
+
+    impl_bool_property!(
+        set_current_auto_range,
+        get_current_auto_range,
+        TLPMX_setCurrentAutoRange,
+        TLPMX_getCurrentAutorange,
+        "current auto-range mode"
+    );
+
+    impl_numeric_property!(
+        set_current_range,
+        get_current_range,
+        TLPMX_setCurrentRange,
+        TLPMX_getCurrentRange,
+        f64,
+        "current range"
+    );
+
+    impl_bool_property!(
+        set_current_ref_state,
+        get_current_ref_state,
+        TLPMX_setCurrentRefState,
+        TLPMX_getCurrentRefState,
+        "current reference state"
+    );
+
+    impl_numeric_property!(
+        set_current_ref,
+        get_current_ref,
+        TLPMX_setCurrentRef,
+        TLPMX_getCurrentRef,
+        f64,
+        "current reference value"
+    );
+
+    // =======================================================================
+    // voltage measurement configuration
+    // =======================================================================
+
+    impl_bool_property!(
+        set_voltage_auto_range,
+        get_voltage_auto_range,
+        TLPMX_setVoltageAutoRange,
+        TLPMX_getVoltageAutorange,
+        "voltage auto-range mode"
+    );
+
+    impl_numeric_property!(
+        set_voltage_range,
+        get_voltage_range,
+        TLPMX_setVoltageRange,
+        TLPMX_getVoltageRange,
+        f64,
+        "voltage range"
+    );
+
+    impl_bool_property!(
+        set_voltage_ref_state,
+        get_voltage_ref_state,
+        TLPMX_setVoltageRefState,
+        TLPMX_getVoltageRefState,
+        "voltage reference state"
+    );
+
+    impl_numeric_property!(
+        set_voltage_ref,
+        get_voltage_ref,
+        TLPMX_setVoltageRef,
+        TLPMX_getVoltageRef,
+        f64,
+        "voltage reference value"
+    );
+
+    // =======================================================================
+    // energy measurement configuration
+    // =======================================================================
+
+    impl_bool_property!(
+        set_energy_auto_range,
+        get_energy_auto_range,
+        TLPMX_setEnergyAutoRange,
+        TLPMX_getEnergyAutorange,
+        "energy auto-range mode"
+    );
+
+    impl_numeric_property!(
+        set_energy_range,
+        get_energy_range,
+        TLPMX_setEnergyRange,
+        TLPMX_getEnergyRange,
+        f64,
+        "energy range"
+    );
+
+    impl_bool_property!(
+        set_energy_ref_state,
+        get_energy_ref_state,
+        TLPMX_setEnergyRefState,
+        TLPMX_getEnergyRefState,
+        "energy reference state"
+    );
+
+    impl_numeric_property!(
+        set_energy_ref,
+        get_energy_ref,
+        TLPMX_setEnergyRef,
+        TLPMX_getEnergyRef,
+        f64,
+        "energy reference value"
     );
 }
 
