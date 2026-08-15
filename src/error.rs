@@ -14,4 +14,7 @@ pub enum TlpmError {
 
     #[error("failed to parse string from c string: {0}")]
     StringConversion(String),
+
+    #[error("invalid enum value returned from device: {0}")]
+    InvalidEnumValue(String),
 }

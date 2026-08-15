@@ -42,6 +42,9 @@ fn main() {
         .allowlist_type("Vi.*")
         .allowlist_var("TLPM.*")
         .allowlist_var("SENSOR_.*")
+        .allowlist_var("I2C_.*")
+        .allowlist_var("FAN_.*")
+        .allowlist_var("DIGITAL_IO_.*")
         .generate()
         .expect("unable to generate TLPMX bindings");
 

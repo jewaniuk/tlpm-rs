@@ -26,6 +26,200 @@ pub enum TlpmAttribute {
     Default = sys::TLPM_ATTR_DFLT_VAL as i16,
 }
 
+/// Specifies the unit of measure for optical power.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i16)]
+pub enum PowerUnit {
+    Watt = sys::TLPM_POWER_UNIT_WATT as i16,
+    Dbm = sys::TLPM_POWER_UNIT_DBM as i16,
+}
+
+impl TryFrom<i16> for PowerUnit {
+    type Error = TlpmError;
+
+    fn try_from(value: i16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::TLPM_POWER_UNIT_WATT as i16 => Ok(PowerUnit::Watt),
+            x if x == sys::TLPM_POWER_UNIT_DBM as i16 => Ok(PowerUnit::Dbm),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown power unit code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the frequency measurement mode.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum FreqMode {
+    Cw = sys::TLPM_FREQ_MODE_CW as u16,
+    Peak = sys::TLPM_FREQ_MODE_PEAK as u16,
+}
+
+impl TryFrom<u16> for FreqMode {
+    type Error = TlpmError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::TLPM_FREQ_MODE_CW as u16 => Ok(FreqMode::Cw),
+            x if x == sys::TLPM_FREQ_MODE_PEAK as u16 => Ok(FreqMode::Peak),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown frequency mode code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the peak filter state.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i16)]
+pub enum PeakFilter {
+    None = sys::TLPM_PEAK_FILTER_NONE as i16,
+    Over = sys::TLPM_PEAK_FILTER_OVER as i16,
+}
+
+impl TryFrom<i16> for PeakFilter {
+    type Error = TlpmError;
+
+    fn try_from(value: i16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::TLPM_PEAK_FILTER_NONE as i16 => Ok(PeakFilter::None),
+            x if x == sys::TLPM_PEAK_FILTER_OVER as i16 => Ok(PeakFilter::Over),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown peak filter code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the analog output route strategy.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum AnalogRoute {
+    Pur = sys::TLPM_ANALOG_ROUTE_PUR as u16,
+    Cba = sys::TLPM_ANALOG_ROUTE_CBA as u16,
+    Cma = sys::TLPM_ANALOG_ROUTE_CMA as u16,
+    Gen = sys::TLPM_ANALOG_ROUTE_GEN as u16,
+    Func = sys::TLPM_ANALOG_ROUTE_FUNC as u16,
+    Cust = sys::TLPM_ANALOG_ROUTE_CUST as u16,
+    Gdbm = sys::TLPM_ANALOG_ROUTE_GDBM as u16,
+}
+
+/// Specifies the position of the sensor switch (e.g., on a Thorlabs S130C).
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum SensorSwitchPosition {
+    Position1 = sys::SENSOR_SWITCH_POS_1 as u16,
+    Position2 = sys::SENSOR_SWITCH_POS_2 as u16,
+}
+
+/// Specifies the I2C operation mode.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum I2cMode {
+    Inter = sys::I2C_OPER_INTER as u16,
+    Slow = sys::I2C_OPER_SLOW as u16,
+    Fast = sys::I2C_OPER_FAST as u16,
+}
+
+impl TryFrom<u16> for I2cMode {
+    type Error = TlpmError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::I2C_OPER_INTER as u16 => Ok(I2cMode::Inter),
+            x if x == sys::I2C_OPER_SLOW as u16 => Ok(I2cMode::Slow),
+            x if x == sys::I2C_OPER_FAST as u16 => Ok(I2cMode::Fast),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown i2c mode code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the fan control mode.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum FanMode {
+    Off = sys::FAN_OPER_OFF as u16,
+    Full = sys::FAN_OPER_FULL as u16,
+    OpenLoop = sys::FAN_OPER_OPEN_LOOP as u16,
+    ClosedLoop = sys::FAN_OPER_CLOSED_LOOP as u16,
+    TemperCtrl = sys::FAN_OPER_TEMPER_CTRL as u16,
+}
+
+impl TryFrom<u16> for FanMode {
+    type Error = TlpmError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::FAN_OPER_OFF as u16 => Ok(FanMode::Off),
+            x if x == sys::FAN_OPER_FULL as u16 => Ok(FanMode::Full),
+            x if x == sys::FAN_OPER_OPEN_LOOP as u16 => Ok(FanMode::OpenLoop),
+            x if x == sys::FAN_OPER_CLOSED_LOOP as u16 => Ok(FanMode::ClosedLoop),
+            x if x == sys::FAN_OPER_TEMPER_CTRL as u16 => Ok(FanMode::TemperCtrl),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown fan mode code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the fan temperature control source.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum FanTempSource {
+    Head = sys::FAN_TEMPER_SRC_HEAD as u16,
+    ExtNtc = sys::FAN_TEMPER_SRC_EXT_NTC as u16,
+}
+
+impl TryFrom<u16> for FanTempSource {
+    type Error = TlpmError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::FAN_TEMPER_SRC_HEAD as u16 => Ok(FanTempSource::Head),
+            x if x == sys::FAN_TEMPER_SRC_EXT_NTC as u16 => Ok(FanTempSource::ExtNtc),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown fan temperature source code: {}",
+                value
+            ))),
+        }
+    }
+}
+
+/// Specifies the digital I/O pin mode.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u16)]
+pub enum DigIoPinMode {
+    Input = sys::DIGITAL_IO_CONFIG_INPUT as u16,
+    Output = sys::DIGITAL_IO_CONFIG_OUTPUT as u16,
+    InputAlt = sys::DIGITAL_IO_CONFIG_INPUT_ALT as u16,
+    OutputAlt = sys::DIGITAL_IO_CONFIG_OUTPUT_ALT as u16,
+}
+
+impl TryFrom<u16> for DigIoPinMode {
+    type Error = TlpmError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            x if x == sys::DIGITAL_IO_CONFIG_INPUT as u16 => Ok(DigIoPinMode::Input),
+            x if x == sys::DIGITAL_IO_CONFIG_OUTPUT as u16 => Ok(DigIoPinMode::Output),
+            x if x == sys::DIGITAL_IO_CONFIG_INPUT_ALT as u16 => Ok(DigIoPinMode::InputAlt),
+            x if x == sys::DIGITAL_IO_CONFIG_OUTPUT_ALT as u16 => Ok(DigIoPinMode::OutputAlt),
+            _ => Err(TlpmError::InvalidEnumValue(format!(
+                "unknown digital io pin mode code: {}",
+                value
+            ))),
+        }
+    }
+}
+
 /// Safe wrapper around a Thorlabs power meter session.
 ///
 /// This struct manages the lifetime of the VISA session used to control a Thorlabs
@@ -504,6 +698,50 @@ impl PowerMeter {
     // power measurement configuration
     // =======================================================================
 
+    /// Set the unit of measure for optical power.
+    ///
+    /// # Arguments
+    ///
+    /// * `unit` - The `PowerUnit` to configure (e.g., `Watt` or `Dbm`).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_power_unit(&self, unit: PowerUnit, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting power unit to {:?} on channel {}", unit, channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setPowerUnit(self.session, unit as i16, channel) },
+            "set_power_unit",
+        )
+    }
+
+    /// Read the currently configured unit of measure for optical power.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `PowerUnit`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized unit code is returned.
+    pub fn get_power_unit(&self, channel: u16) -> Result<PowerUnit, TlpmError> {
+        tracing::debug!("getting power unit on channel {}", channel);
+        let mut unit_code: i16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getPowerUnit(self.session, &mut unit_code, channel) },
+            "get_power_unit",
+        )?;
+
+        PowerUnit::try_from(unit_code)
+    }
+
     impl_bool_property!(
         set_power_auto_range,
         get_power_auto_range,
@@ -651,6 +889,357 @@ impl PowerMeter {
         f64,
         "energy reference value"
     );
+
+    // =======================================================================
+    // frequency measurement configuration
+    // =======================================================================
+
+    /// Set the frequency measurement mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The `FreqMode` to configure (e.g., `Cw` or `Peak`).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_freq_mode(&self, mode: FreqMode, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting freq mode to {:?} on channel {}", mode, channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setFreqMode(self.session, mode as u16, channel) },
+            "set_freq_mode",
+        )
+    }
+
+    /// Read the currently configured frequency measurement mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `FreqMode`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized mode code is returned.
+    pub fn get_freq_mode(&self, channel: u16) -> Result<FreqMode, TlpmError> {
+        tracing::debug!("getting freq mode on channel {}", channel);
+        let mut mode_code: u16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getFreqMode(self.session, &mut mode_code, channel) },
+            "get_freq_mode",
+        )?;
+
+        FreqMode::try_from(mode_code)
+    }
+
+    // =======================================================================
+    // peak detector configuration
+    // =======================================================================
+
+    /// Set the peak filter configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter` - The `PeakFilter` state to apply.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_peak_filter(&self, filter: PeakFilter, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting peak filter to {:?} on channel {}", filter, channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setPeakFilter(self.session, filter as i16, channel) },
+            "set_peak_filter",
+        )
+    }
+
+    /// Read the currently configured peak filter.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `PeakFilter`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized filter code is returned.
+    pub fn get_peak_filter(&self, channel: u16) -> Result<PeakFilter, TlpmError> {
+        tracing::debug!("getting peak filter on channel {}", channel);
+        let mut filter_code: i16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getPeakFilter(self.session, &mut filter_code, channel) },
+            "get_peak_filter",
+        )?;
+
+        PeakFilter::try_from(filter_code)
+    }
+
+    // =======================================================================
+    // analog output configuration
+    // =======================================================================
+
+    /// Set the analog output routing strategy.
+    ///
+    /// # Arguments
+    ///
+    /// * `route` - The `AnalogRoute` to configure.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_analog_output_route(
+        &self,
+        route: AnalogRoute,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting analog output route to {:?} on channel {}",
+            route,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_setAnalogOutputRoute(self.session, route as u16, channel) },
+            "set_analog_output_route",
+        )
+    }
+
+    /// Read the currently configured analog output route.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A string representation of the active analog route.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_analog_output_route(&self, channel: u16) -> Result<String, TlpmError> {
+        tracing::debug!("getting analog output route on channel {}", channel);
+        let mut route_name = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getAnalogOutputRoute(self.session, route_name.as_mut_ptr(), channel)
+            },
+            "get_analog_output_route",
+        )?;
+
+        let c_str = unsafe { CStr::from_ptr(route_name.as_ptr()) };
+        Ok(c_str.to_string_lossy().into_owned())
+    }
+
+    // =======================================================================
+    // i2c configuration
+    // =======================================================================
+
+    /// Set the I2C operation mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The `I2cMode` to configure.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_i2c_mode(&self, mode: I2cMode) -> Result<(), TlpmError> {
+        tracing::debug!("setting i2c mode to {:?}", mode);
+        self.check_status(
+            unsafe { sys::TLPMX_setI2CMode(self.session, mode as u16) },
+            "set_i2c_mode",
+        )
+    }
+
+    /// Read the currently configured I2C operation mode.
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `I2cMode`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized mode code is returned.
+    pub fn get_i2c_mode(&self) -> Result<I2cMode, TlpmError> {
+        tracing::debug!("getting i2c mode");
+        // the getter expects a signed integer pointer
+        let mut mode_code: i16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getI2CMode(self.session, &mut mode_code) },
+            "get_i2c_mode",
+        )?;
+
+        // cast back to unsigned for the try_from conversion
+        I2cMode::try_from(mode_code as u16)
+    }
+
+    // =======================================================================
+    // fan configuration
+    // =======================================================================
+
+    /// Set the fan control mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The `FanMode` to configure.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_fan_mode(&self, mode: FanMode, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting fan mode to {:?} on channel {}", mode, channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setFanMode(self.session, mode as u16, channel) },
+            "set_fan_mode",
+        )
+    }
+
+    /// Read the currently configured fan control mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `FanMode`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized mode code is returned.
+    pub fn get_fan_mode(&self, channel: u16) -> Result<FanMode, TlpmError> {
+        tracing::debug!("getting fan mode on channel {}", channel);
+        let mut mode_code: u16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getFanMode(self.session, &mut mode_code, channel) },
+            "get_fan_mode",
+        )?;
+
+        FanMode::try_from(mode_code)
+    }
+
+    /// Set the fan temperature control source.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The `FanTempSource` to configure.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_fan_temperature_source(
+        &self,
+        source: FanTempSource,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting fan temperature source to {:?} on channel {}",
+            source,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_setFanTemperatureSource(self.session, source as u16, channel) },
+            "set_fan_temperature_source",
+        )
+    }
+
+    /// Read the currently configured fan temperature control source.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `FanTempSource`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized source code is returned.
+    pub fn get_fan_temperature_source(&self, channel: u16) -> Result<FanTempSource, TlpmError> {
+        tracing::debug!("getting fan temperature source on channel {}", channel);
+        let mut source_code: u16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getFanTemperatureSource(self.session, &mut source_code, channel) },
+            "get_fan_temperature_source",
+        )?;
+
+        FanTempSource::try_from(source_code)
+    }
+
+    // =======================================================================
+    // digital io configuration
+    // =======================================================================
+
+    /// Set the digital I/O pin mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `pin_number` - The pin number to configure.
+    /// * `mode` - The `DigIoPinMode` to apply.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_dig_io_pin_mode(
+        &self,
+        pin_number: i16,
+        mode: DigIoPinMode,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting digital io pin {} to mode {:?}", pin_number, mode);
+        self.check_status(
+            unsafe { sys::TLPMX_setDigIoPinMode(self.session, pin_number, mode as u16) },
+            "set_dig_io_pin_mode",
+        )
+    }
+
+    /// Read the currently configured digital I/O pin mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `pin_number` - The pin number to query.
+    ///
+    /// # Returns
+    ///
+    /// The currently configured `DigIoPinMode`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code,
+    /// or `TlpmError::InvalidEnumValue` if an unrecognized mode code is returned.
+    pub fn get_dig_io_pin_mode(&self, pin_number: i16) -> Result<DigIoPinMode, TlpmError> {
+        tracing::debug!("getting digital io mode for pin {}", pin_number);
+        let mut mode_code: u16 = 0;
+
+        self.check_status(
+            unsafe { sys::TLPMX_getDigIoPinMode(self.session, pin_number, &mut mode_code) },
+            "get_dig_io_pin_mode",
+        )?;
+
+        DigIoPinMode::try_from(mode_code)
+    }
 }
 
 impl Drop for PowerMeter {
