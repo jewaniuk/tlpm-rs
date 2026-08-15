@@ -247,4 +247,110 @@ impl PowerMeter {
             is_encrypted == VI_TRUE,
         ))
     }
+
+    pub fn error_count(&self) -> Result<u32, TlpmError> {
+        let mut count: u32 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_errorCount(self.session, &mut count) },
+            "error_count",
+        )?;
+        Ok(count)
+    }
+
+    pub fn error_query(&self) -> Result<(i32, String), TlpmError> {
+        let mut err_num: i32 = 0;
+        let mut buffer = [0i8; sys::TLPM_ERR_DESCR_BUFFER_SIZE as usize];
+        self.check_status(
+            unsafe { sys::TLPMX_errorQuery(self.session, &mut err_num, buffer.as_mut_ptr()) },
+            "error_query",
+        )?;
+        let msg = unsafe { std::ffi::CStr::from_ptr(buffer.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        Ok((err_num, msg))
+    }
+
+    pub fn error_query_mode(&self, mode: bool) -> Result<(), TlpmError> {
+        let c_mode = if mode { VI_TRUE } else { VI_FALSE };
+        self.check_status(
+            unsafe { sys::TLPMX_errorQueryMode(self.session, c_mode) },
+            "error_query_mode",
+        )
+    }
+
+    pub fn export_settings_as_json(&self, max_size: u32) -> Result<String, TlpmError> {
+        let mut buffer = vec![0i8; max_size as usize];
+        self.check_status(
+            unsafe { sys::TLPMX_exportSettingsAsJson(self.session, buffer.as_mut_ptr(), max_size) },
+            "export_settings_as_json",
+        )?;
+        let msg = unsafe { std::ffi::CStr::from_ptr(buffer.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        Ok(msg)
+    }
+
+    pub fn import_settings_from_json(
+        &self,
+        adapt: bool,
+        json_settings: &str,
+    ) -> Result<(), TlpmError> {
+        let c_adapt = if adapt { VI_TRUE } else { VI_FALSE };
+        let c_str = std::ffi::CString::new(json_settings)
+            .map_err(|_| TlpmError::StringConversion("invalid JSON string".to_string()))?;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_importSettingsFromJson(self.session, c_adapt, c_str.as_ptr() as *mut _)
+            },
+            "import_settings_from_json",
+        )
+    }
+
+    pub fn send_ntp_request(
+        &self,
+        time_mode: bool,
+        time_zone: i16,
+        ip_address: &str,
+    ) -> Result<(), TlpmError> {
+        let c_mode = if time_mode { VI_TRUE } else { VI_FALSE };
+        let c_ip = std::ffi::CString::new(ip_address)
+            .map_err(|_| TlpmError::StringConversion("invalid IP".to_string()))?;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_sendNTPRequest(self.session, c_mode, time_zone, c_ip.as_ptr() as *mut _)
+            },
+            "send_ntp_request",
+        )
+    }
+
+    pub fn self_test(&self) -> Result<(i16, String), TlpmError> {
+        let mut result: i16 = 0;
+        let mut buffer = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        self.check_status(
+            unsafe { sys::TLPMX_selfTest(self.session, &mut result, buffer.as_mut_ptr()) },
+            "self_test",
+        )?;
+        let msg = unsafe { std::ffi::CStr::from_ptr(buffer.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        Ok((result, msg))
+    }
+
+    pub fn revision_query(&self) -> Result<(String, String), TlpmError> {
+        let mut drv_rev = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut fw_rev = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        self.check_status(
+            unsafe {
+                sys::TLPMX_revisionQuery(self.session, drv_rev.as_mut_ptr(), fw_rev.as_mut_ptr())
+            },
+            "revision_query",
+        )?;
+        let d_str = unsafe { std::ffi::CStr::from_ptr(drv_rev.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        let f_str = unsafe { std::ffi::CStr::from_ptr(fw_rev.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        Ok((d_str, f_str))
+    }
 }

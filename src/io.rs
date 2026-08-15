@@ -660,4 +660,161 @@ impl PowerMeter {
             io3 == VI_TRUE,
         ))
     }
+
+    /// Read the analog output slope range.
+    ///
+    /// # Returns
+    /// A tuple containing `(min_slope, max_slope)`.
+    pub fn get_analog_output_slope_range(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        let mut min_slope = 0.0;
+        let mut max_slope = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getAnalogOutputSlopeRange(
+                    self.session,
+                    &mut min_slope,
+                    &mut max_slope,
+                    channel,
+                )
+            },
+            "get_analog_output_slope_range",
+        )?;
+        Ok((min_slope, max_slope))
+    }
+
+    /// Read the analog output voltage.
+    pub fn get_analog_output_voltage(
+        &self,
+        attribute: TlpmAttribute,
+        channel: u16,
+    ) -> Result<f64, TlpmError> {
+        let mut voltage = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getAnalogOutputVoltage(
+                    self.session,
+                    attribute as i16,
+                    &mut voltage,
+                    channel,
+                )
+            },
+            "get_analog_output_voltage",
+        )?;
+        Ok(voltage)
+    }
+
+    /// Read the analog output voltage range.
+    ///
+    /// # Returns
+    /// A tuple containing `(min_voltage, max_voltage)`.
+    pub fn get_analog_output_voltage_range(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        let mut min_volt = 0.0;
+        let mut max_volt = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getAnalogOutputVoltageRange(
+                    self.session,
+                    &mut min_volt,
+                    &mut max_volt,
+                    channel,
+                )
+            },
+            "get_analog_output_voltage_range",
+        )?;
+        Ok((min_volt, max_volt))
+    }
+
+    /// Read the position analog output slope range.
+    ///
+    /// # Returns
+    /// A tuple containing `(min_slope, max_slope)`.
+    pub fn get_position_analog_output_slope_range(
+        &self,
+        channel: u16,
+    ) -> Result<(f64, f64), TlpmError> {
+        let mut min_slope = 0.0;
+        let mut max_slope = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPositionAnalogOutputSlopeRange(
+                    self.session,
+                    &mut min_slope,
+                    &mut max_slope,
+                    channel,
+                )
+            },
+            "get_position_analog_output_slope_range",
+        )?;
+        Ok((min_slope, max_slope))
+    }
+
+    /// Read the position analog output voltage for X and Y axes.
+    ///
+    /// # Returns
+    /// A tuple containing `(voltage_x, voltage_y)`.
+    pub fn get_position_analog_output_voltage(
+        &self,
+        attribute: TlpmAttribute,
+        channel: u16,
+    ) -> Result<(f64, f64), TlpmError> {
+        let mut voltage_x = 0.0;
+        let mut voltage_y = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPositionAnalogOutputVoltage(
+                    self.session,
+                    attribute as i16,
+                    &mut voltage_x,
+                    &mut voltage_y,
+                    channel,
+                )
+            },
+            "get_position_analog_output_voltage",
+        )?;
+        Ok((voltage_x, voltage_y))
+    }
+
+    /// Read the position analog output voltage range.
+    ///
+    /// # Returns
+    /// A tuple containing `(min_voltage, max_voltage)`.
+    pub fn get_position_analog_output_voltage_range(
+        &self,
+        channel: u16,
+    ) -> Result<(f64, f64), TlpmError> {
+        let mut min_volt = 0.0;
+        let mut max_volt = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPositionAnalogOutputVoltageRange(
+                    self.session,
+                    &mut min_volt,
+                    &mut max_volt,
+                    channel,
+                )
+            },
+            "get_position_analog_output_voltage_range",
+        )?;
+        Ok((min_volt, max_volt))
+    }
+
+    /// Get the output logic state of all 4 Digital IO pins.
+    pub fn get_dig_io_output(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        let mut io0: sys::ViBoolean = 0;
+        let mut io1: sys::ViBoolean = 0;
+        let mut io2: sys::ViBoolean = 0;
+        let mut io3: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getDigIoOutput(self.session, &mut io0, &mut io1, &mut io2, &mut io3)
+            },
+            "get_dig_io_output",
+        )?;
+        Ok((
+            io0 == VI_TRUE,
+            io1 == VI_TRUE,
+            io2 == VI_TRUE,
+            io3 == VI_TRUE,
+        ))
+    }
 }

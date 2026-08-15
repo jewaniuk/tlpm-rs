@@ -189,4 +189,51 @@ impl PowerMeter {
             "cancel_zero_pos",
         )
     }
+
+    /// Set the R0 and Beta coefficients for an external NTC thermistor.
+    pub fn set_ext_ntc_parameter(
+        &self,
+        r0_coeff: f64,
+        beta_coeff: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        self.check_status(
+            unsafe { sys::TLPMX_setExtNtcParameter(self.session, r0_coeff, beta_coeff, channel) },
+            "set_ext_ntc_parameter",
+        )
+    }
+
+    /// Get the R0 and Beta coefficients for an external NTC thermistor.
+    ///
+    /// # Returns
+    /// A tuple containing `(r0_coefficient, beta_coefficient)`.
+    pub fn get_ext_ntc_parameter(
+        &self,
+        attribute: TlpmAttribute,
+        channel: u16,
+    ) -> Result<(f64, f64), TlpmError> {
+        let mut r0 = 0.0;
+        let mut beta = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getExtNtcParameter(
+                    self.session,
+                    attribute as i16,
+                    &mut r0,
+                    &mut beta,
+                    channel,
+                )
+            },
+            "get_ext_ntc_parameter",
+        )?;
+        Ok((r0, beta))
+    }
+
+    /// Re-initialize the connected sensor.
+    pub fn reinit_sensor(&self, channel: u16) -> Result<(), TlpmError> {
+        self.check_status(
+            unsafe { sys::TLPMX_reinitSensor(self.session, channel) },
+            "reinit_sensor",
+        )
+    }
 }

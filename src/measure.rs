@@ -178,4 +178,24 @@ impl PowerMeter {
         )?;
         Ok((val1, val2))
     }
+
+    /// Retrieve the state of the measurement fetch operation.
+    pub fn get_fetch_state(&self, channel: u16) -> Result<bool, TlpmError> {
+        let mut state: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFetchState(self.session, &mut state, channel) },
+            "get_fetch_state",
+        )?;
+        Ok(state == crate::VI_TRUE)
+    }
+
+    /// Retrieve the maximum fast samplerate for the active sensor.
+    pub fn get_fast_max_samplerate(&self, channel: u16) -> Result<u32, TlpmError> {
+        let mut rate: u32 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFastMaxSamplerate(self.session, &mut rate, channel) },
+            "get_fast_max_samplerate",
+        )?;
+        Ok(rate)
+    }
 }

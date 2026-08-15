@@ -196,4 +196,12 @@ impl PowerMeter {
         TLPMX_getThermopilePulseIntegrator,
         "thermopile pulse integrator state"
     );
+
+    /// Start the peak detector.
+    pub fn start_peak_detector(&self, channel: u16) -> Result<(), TlpmError> {
+        self.check_status(
+            unsafe { sys::TLPMX_startPeakDetector(self.session, channel) },
+            "start_peak_detector",
+        )
+    }
 }

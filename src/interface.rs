@@ -240,4 +240,93 @@ impl PowerMeter {
         // cast back to unsigned for the try_from conversion
         I2cMode::try_from(mode_code as u16)
     }
+
+    pub fn i2c_read(&self, address: u32, count: u32) -> Result<u32, TlpmError> {
+        let mut data_read: u32 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_I2CRead(self.session, address, count, &mut data_read) },
+            "i2c_read",
+        )?;
+        Ok(data_read)
+    }
+
+    pub fn i2c_write(&self, address: u32, hex_data: &str) -> Result<(), TlpmError> {
+        let c_str = std::ffi::CString::new(hex_data)
+            .map_err(|_| TlpmError::StringConversion("invalid hex string".to_string()))?;
+        self.check_status(
+            unsafe { sys::TLPMX_I2CWrite(self.session, address, c_str.as_ptr() as *mut _) },
+            "i2c_write",
+        )
+    }
+
+    pub fn i2c_write_read(
+        &self,
+        address: u32,
+        hex_send_data: &str,
+        count: u32,
+    ) -> Result<u32, TlpmError> {
+        let c_str = std::ffi::CString::new(hex_send_data)
+            .map_err(|_| TlpmError::StringConversion("invalid hex string".to_string()))?;
+        let mut data_read: u32 = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_I2CWriteRead(
+                    self.session,
+                    address,
+                    c_str.as_ptr() as *mut _,
+                    count,
+                    &mut data_read,
+                )
+            },
+            "i2c_write_read",
+        )?;
+        Ok(data_read)
+    }
+
+    pub fn write_raw(&self, command: &str) -> Result<(), TlpmError> {
+        let c_str = std::ffi::CString::new(command)
+            .map_err(|_| TlpmError::StringConversion("invalid command string".to_string()))?;
+        self.check_status(
+            unsafe { sys::TLPMX_writeRaw(self.session, c_str.as_ptr() as *mut _) },
+            "write_raw",
+        )
+    }
+
+    pub fn read_raw(&self, size: u32) -> Result<(String, u32), TlpmError> {
+        let mut buffer = vec![0i8; size as usize];
+        let mut return_count: u32 = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_readRaw(self.session, buffer.as_mut_ptr(), size, &mut return_count)
+            },
+            "read_raw",
+        )?;
+        let msg = unsafe { std::ffi::CStr::from_ptr(buffer.as_ptr()) }
+            .to_string_lossy()
+            .into_owned();
+        Ok((msg, return_count))
+    }
+
+    pub fn write_register(&self, reg: i16, value: i16) -> Result<(), TlpmError> {
+        self.check_status(
+            unsafe { sys::TLPMX_writeRegister(self.session, reg, value) },
+            "write_register",
+        )
+    }
+
+    pub fn read_register(&self, reg: i16) -> Result<i16, TlpmError> {
+        let mut value: i16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_readRegister(self.session, reg, &mut value) },
+            "read_register",
+        )?;
+        Ok(value)
+    }
+
+    pub fn preset_register(&self) -> Result<(), TlpmError> {
+        self.check_status(
+            unsafe { sys::TLPMX_presetRegister(self.session) },
+            "preset_register",
+        )
+    }
 }
