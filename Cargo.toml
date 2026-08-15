@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 libc = "0.2.189"
 thiserror = "2.0.20"
+tracing = "0.1.44"
 
 [build-dependencies]
 bindgen = "0.72.1"
