@@ -103,10 +103,16 @@ impl PowerMeter {
     /// Retrieve the current running state of the fan.
     ///
     /// # Arguments
+    ///
     /// * `channel` - The sensor channel (typically `1`).
     ///
     /// # Returns
+    ///
     /// `true` if the fan is running, `false` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fan_state(&self, channel: u16) -> Result<bool, TlpmError> {
         tracing::debug!("getting fan state on channel {}", channel);
         let mut is_running: sys::ViBoolean = 0;
@@ -120,8 +126,13 @@ impl PowerMeter {
     /// Set the fan voltage.
     ///
     /// # Arguments
+    ///
     /// * `voltage` - The voltage to apply.
     /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_fan_voltage(&self, voltage: f64, channel: u16) -> Result<(), TlpmError> {
         tracing::debug!("setting fan voltage to {} on channel {}", voltage, channel);
         self.check_status(
@@ -131,6 +142,18 @@ impl PowerMeter {
     }
 
     /// Retrieve the currently configured fan voltage.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The currently configured fan voltage.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fan_voltage(&self, channel: u16) -> Result<f64, TlpmError> {
         tracing::debug!("getting fan voltage on channel {}", channel);
         let mut voltage: f64 = 0.0;
@@ -142,6 +165,16 @@ impl PowerMeter {
     }
 
     /// Set the maximum and target RPM for the fan.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_rpm` - The maximum RPM value.
+    /// * `target_rpm` - The target RPM value.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_fan_rpm(
         &self,
         max_rpm: f64,
@@ -157,8 +190,17 @@ impl PowerMeter {
 
     /// Retrieve the maximum and target RPM for the fan.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(max_rpm, target_rpm)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fan_rpm(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
         tracing::debug!("getting fan rpm on channel {}", channel);
         let mut max_rpm: f64 = 0.0;
@@ -171,6 +213,18 @@ impl PowerMeter {
     }
 
     /// Retrieve the actual current RPM of the fan.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The actual measured RPM of the fan.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_act_fan_rpm(&self, channel: u16) -> Result<f64, TlpmError> {
         tracing::debug!("getting actual fan rpm on channel {}", channel);
         let mut rpm: f64 = 0.0;
@@ -182,6 +236,18 @@ impl PowerMeter {
     }
 
     /// Set the fan temperature adjustment parameters.
+    ///
+    /// # Arguments
+    ///
+    /// * `voltage_min` - The minimum voltage.
+    /// * `voltage_max` - The maximum voltage.
+    /// * `temperature_min` - The minimum temperature.
+    /// * `temperature_max` - The maximum temperature.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_fan_adjust_parameters(
         &self,
         voltage_min: f64,
@@ -208,8 +274,17 @@ impl PowerMeter {
 
     /// Retrieve the fan temperature adjustment parameters.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(voltage_min, voltage_max, temperature_min, temperature_max)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fan_adjust_parameters(
         &self,
         channel: u16,
@@ -348,6 +423,16 @@ impl PowerMeter {
     );
 
     /// Set the laser state, including frequency and duration.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - `true` to enable the laser, `false` to disable.
+    /// * `frequency` - The laser frequency in Hz.
+    /// * `duration` - The duration to output.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_laser_state(
         &self,
         state: bool,
@@ -368,6 +453,14 @@ impl PowerMeter {
     }
 
     /// Retrieve the current boolean state of the laser.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the laser is active, `false` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_laser_state(&self) -> Result<bool, TlpmError> {
         tracing::debug!("getting laser state");
         let mut state: sys::ViBoolean = 0;
@@ -403,9 +496,14 @@ impl PowerMeter {
     /// Set the analog logarithmic output configuration.
     ///
     /// # Arguments
+    ///
     /// * `log_slope` - The slope of the logarithmic output.
     /// * `log_offset` - The offset of the logarithmic output.
     /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_analog_log_conf(
         &self,
         log_slope: f64,
@@ -426,8 +524,17 @@ impl PowerMeter {
 
     /// Read the currently configured analog logarithmic output settings.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(log_slope, log_offset)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_analog_log_conf(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
         tracing::debug!("getting analog log config on channel {}", channel);
         let mut log_slope: f64 = 0.0;
@@ -442,6 +549,16 @@ impl PowerMeter {
     }
 
     /// Set the Pass/Fail power window limits.
+    ///
+    /// # Arguments
+    ///
+    /// * `min` - The minimum power limit.
+    /// * `max` - The maximum power limit.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_pass_fail_power_window(
         &self,
         min: f64,
@@ -456,7 +573,20 @@ impl PowerMeter {
     }
 
     /// Retrieve the Pass/Fail power window limits.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(min_power, max_power)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_pass_fail_power_window(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting pass/fail power window on channel {}", channel);
         let mut min: f64 = 0.0;
         let mut max: f64 = 0.0;
         self.check_status(
@@ -467,6 +597,16 @@ impl PowerMeter {
     }
 
     /// Set the Pass/Fail energy window limits.
+    ///
+    /// # Arguments
+    ///
+    /// * `min` - The minimum energy limit.
+    /// * `max` - The maximum energy limit.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_pass_fail_energy_window(
         &self,
         min: f64,
@@ -481,7 +621,20 @@ impl PowerMeter {
     }
 
     /// Retrieve the Pass/Fail energy window limits.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(min_energy, max_energy)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_pass_fail_energy_window(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting pass/fail energy window on channel {}", channel);
         let mut min: f64 = 0.0;
         let mut max: f64 = 0.0;
         self.check_status(
@@ -494,6 +647,18 @@ impl PowerMeter {
     }
 
     /// Read the overall Pass/Fail state.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// `true` if the state is Pass, `false` if Fail.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_pass_fail_state(&self, channel: u16) -> Result<bool, TlpmError> {
         tracing::debug!("getting pass/fail state on channel {}", channel);
         let mut state: sys::ViUInt16 = 0;
@@ -527,6 +692,17 @@ impl PowerMeter {
     );
 
     /// Set the direction (Input/Output) for all 4 Digital IO pins simultaneously.
+    ///
+    /// # Arguments
+    ///
+    /// * `io0` - `true` for Output, `false` for Input.
+    /// * `io1` - `true` for Output, `false` for Input.
+    /// * `io2` - `true` for Output, `false` for Input.
+    /// * `io3` - `true` for Output, `false` for Input.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_dig_io_direction(
         &self,
         io0: bool,
@@ -534,6 +710,13 @@ impl PowerMeter {
         io2: bool,
         io3: bool,
     ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting digital io direction: 0={}, 1={}, 2={}, 3={}",
+            io0,
+            io1,
+            io2,
+            io3
+        );
         let c0 = if io0 { VI_TRUE } else { VI_FALSE };
         let c1 = if io1 { VI_TRUE } else { VI_FALSE };
         let c2 = if io2 { VI_TRUE } else { VI_FALSE };
@@ -545,8 +728,16 @@ impl PowerMeter {
     }
 
     /// Get the direction (Input/Output) for all 4 Digital IO pins.
-    /// Returns a tuple: (io0, io1, io2, io3) where true = Output, false = Input.
+    ///
+    /// # Returns
+    ///
+    /// A tuple: `(io0, io1, io2, io3)` where `true` = Output, `false` = Input.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_dig_io_direction(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        tracing::debug!("getting digital io direction");
         let mut io0: sys::ViBoolean = 0;
         let mut io1: sys::ViBoolean = 0;
         let mut io2: sys::ViBoolean = 0;
@@ -566,6 +757,17 @@ impl PowerMeter {
     }
 
     /// Set the output logic state for all 4 Digital IO pins simultaneously.
+    ///
+    /// # Arguments
+    ///
+    /// * `io0` - `true` for High, `false` for Low.
+    /// * `io1` - `true` for High, `false` for Low.
+    /// * `io2` - `true` for High, `false` for Low.
+    /// * `io3` - `true` for High, `false` for Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_dig_io_output(
         &self,
         io0: bool,
@@ -573,6 +775,13 @@ impl PowerMeter {
         io2: bool,
         io3: bool,
     ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting digital io output: 0={}, 1={}, 2={}, 3={}",
+            io0,
+            io1,
+            io2,
+            io3
+        );
         let c0 = if io0 { VI_TRUE } else { VI_FALSE };
         let c1 = if io1 { VI_TRUE } else { VI_FALSE };
         let c2 = if io2 { VI_TRUE } else { VI_FALSE };
@@ -584,7 +793,16 @@ impl PowerMeter {
     }
 
     /// Get the actual physical logic state of all 4 Digital IO port pins.
+    ///
+    /// # Returns
+    ///
+    /// A tuple: `(io0, io1, io2, io3)` where `true` = High, `false` = Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_dig_io_port(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        tracing::debug!("getting digital io port states");
         let mut io0: sys::ViBoolean = 0;
         let mut io1: sys::ViBoolean = 0;
         let mut io2: sys::ViBoolean = 0;
@@ -604,6 +822,17 @@ impl PowerMeter {
     }
 
     /// Set the output logic state for all 4 Digital IO pins (Alternative function).
+    ///
+    /// # Arguments
+    ///
+    /// * `io0` - `true` for High, `false` for Low.
+    /// * `io1` - `true` for High, `false` for Low.
+    /// * `io2` - `true` for High, `false` for Low.
+    /// * `io3` - `true` for High, `false` for Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_dig_io_pin_output(
         &self,
         io0: bool,
@@ -611,6 +840,13 @@ impl PowerMeter {
         io2: bool,
         io3: bool,
     ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting digital io pin output: 0={}, 1={}, 2={}, 3={}",
+            io0,
+            io1,
+            io2,
+            io3
+        );
         let c0 = if io0 { VI_TRUE } else { VI_FALSE };
         let c1 = if io1 { VI_TRUE } else { VI_FALSE };
         let c2 = if io2 { VI_TRUE } else { VI_FALSE };
@@ -622,7 +858,16 @@ impl PowerMeter {
     }
 
     /// Get the configured output logic state of all 4 Digital IO pins.
+    ///
+    /// # Returns
+    ///
+    /// A tuple: `(io0, io1, io2, io3)` where `true` = High, `false` = Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_dig_io_pin_output(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        tracing::debug!("getting digital io pin outputs");
         let mut io0: sys::ViBoolean = 0;
         let mut io1: sys::ViBoolean = 0;
         let mut io2: sys::ViBoolean = 0;
@@ -642,7 +887,16 @@ impl PowerMeter {
     }
 
     /// Get the logic state of all 4 Digital IO input pins.
+    ///
+    /// # Returns
+    ///
+    /// A tuple: `(io0, io1, io2, io3)` where `true` = High, `false` = Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_dig_io_pin_input(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        tracing::debug!("getting digital io pin inputs");
         let mut io0: sys::ViBoolean = 0;
         let mut io1: sys::ViBoolean = 0;
         let mut io2: sys::ViBoolean = 0;
@@ -663,9 +917,19 @@ impl PowerMeter {
 
     /// Read the analog output slope range.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(min_slope, max_slope)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_analog_output_slope_range(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting analog output slope range on channel {}", channel);
         let mut min_slope = 0.0;
         let mut max_slope = 0.0;
         self.check_status(
@@ -683,11 +947,25 @@ impl PowerMeter {
     }
 
     /// Read the analog output voltage.
+    ///
+    /// # Arguments
+    ///
+    /// * `attribute` - The `TlpmAttribute` to query (e.g., Set, Min, Max).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The analog output voltage.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_analog_output_voltage(
         &self,
         attribute: TlpmAttribute,
         channel: u16,
     ) -> Result<f64, TlpmError> {
+        tracing::debug!("getting analog output voltage on channel {}", channel);
         let mut voltage = 0.0;
         self.check_status(
             unsafe {
@@ -705,9 +983,19 @@ impl PowerMeter {
 
     /// Read the analog output voltage range.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(min_voltage, max_voltage)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_analog_output_voltage_range(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting analog output voltage range on channel {}", channel);
         let mut min_volt = 0.0;
         let mut max_volt = 0.0;
         self.check_status(
@@ -726,12 +1014,25 @@ impl PowerMeter {
 
     /// Read the position analog output slope range.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(min_slope, max_slope)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_position_analog_output_slope_range(
         &self,
         channel: u16,
     ) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!(
+            "getting position analog output slope range on channel {}",
+            channel
+        );
         let mut min_slope = 0.0;
         let mut max_slope = 0.0;
         self.check_status(
@@ -750,13 +1051,27 @@ impl PowerMeter {
 
     /// Read the position analog output voltage for X and Y axes.
     ///
+    /// # Arguments
+    ///
+    /// * `attribute` - The `TlpmAttribute` to query.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(voltage_x, voltage_y)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_position_analog_output_voltage(
         &self,
         attribute: TlpmAttribute,
         channel: u16,
     ) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!(
+            "getting position analog output voltage on channel {}",
+            channel
+        );
         let mut voltage_x = 0.0;
         let mut voltage_y = 0.0;
         self.check_status(
@@ -776,12 +1091,25 @@ impl PowerMeter {
 
     /// Read the position analog output voltage range.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(min_voltage, max_voltage)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_position_analog_output_voltage_range(
         &self,
         channel: u16,
     ) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!(
+            "getting position analog output voltage range on channel {}",
+            channel
+        );
         let mut min_volt = 0.0;
         let mut max_volt = 0.0;
         self.check_status(
@@ -799,7 +1127,16 @@ impl PowerMeter {
     }
 
     /// Get the output logic state of all 4 Digital IO pins.
+    ///
+    /// # Returns
+    ///
+    /// A tuple: `(io0, io1, io2, io3)` where `true` = High, `false` = Low.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_dig_io_output(&self) -> Result<(bool, bool, bool, bool), TlpmError> {
+        tracing::debug!("getting digital io outputs");
         let mut io0: sys::ViBoolean = 0;
         let mut io1: sys::ViBoolean = 0;
         let mut io2: sys::ViBoolean = 0;

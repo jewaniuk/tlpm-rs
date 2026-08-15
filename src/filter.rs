@@ -198,7 +198,16 @@ impl PowerMeter {
     );
 
     /// Start the peak detector.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn start_peak_detector(&self, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("starting peak detector on channel {}", channel);
         self.check_status(
             unsafe { sys::TLPMX_startPeakDetector(self.session, channel) },
             "start_peak_detector",

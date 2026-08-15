@@ -7,12 +7,13 @@ impl PowerMeter {
     ///
     /// # Returns
     ///
-    /// A tuple containing the manufacturer, device name, serial number, and firmware revision.
+    /// A tuple containing `(manufacturer, device_name, serial_number, firmware_revision)`.
     ///
     /// # Errors
     ///
     /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn identification_query(&self) -> Result<(String, String, String, String), TlpmError> {
+        tracing::debug!("querying instrument identification");
         let mut manufacturer = [0i8; sys::TLPM_BUFFER_SIZE as usize];
         let mut device_name = [0i8; sys::TLPM_BUFFER_SIZE as usize];
         let mut serial_number = [0i8; sys::TLPM_BUFFER_SIZE as usize];
@@ -195,13 +196,24 @@ impl PowerMeter {
     }
 
     /// Set the device encryption configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `old_password` - The current password string.
+    /// * `new_password` - The new password string to set.
+    /// * `encryption_enabled` - `true` to enable encryption, `false` to disable.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` if either password contains a null byte,
+    /// or a `TlpmError::VisaError` if the device responds with an error code.
     pub fn set_encryption(
         &self,
         old_password: &str,
         new_password: &str,
         encryption_enabled: bool,
     ) -> Result<(), TlpmError> {
-        tracing::debug!("setting encryption state");
+        tracing::debug!("setting encryption state to {}", encryption_enabled);
         let c_old = CString::new(old_password)
             .map_err(|_| TlpmError::StringConversion("invalid old password".to_string()))?;
         let c_new = CString::new(new_password)
@@ -228,7 +240,12 @@ impl PowerMeter {
     /// Retrieve the current encryption configuration.
     ///
     /// # Returns
+    ///
     /// A tuple containing `(password_string, encryption_enabled)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_encryption(&self) -> Result<(String, bool), TlpmError> {
         tracing::debug!("getting encryption state");
         let mut password = [0i8; sys::TLPM_BUFFER_SIZE as usize];
@@ -248,7 +265,17 @@ impl PowerMeter {
         ))
     }
 
+    /// Retrieve the current instrument error count.
+    ///
+    /// # Returns
+    ///
+    /// The number of errors currently in the instrument's error queue.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn error_count(&self) -> Result<u32, TlpmError> {
+        tracing::debug!("getting error count");
         let mut count: u32 = 0;
         self.check_status(
             unsafe { sys::TLPMX_errorCount(self.session, &mut count) },
@@ -257,7 +284,17 @@ impl PowerMeter {
         Ok(count)
     }
 
+    /// Read the oldest error from the instrument's error queue.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(error_code, error_message)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn error_query(&self) -> Result<(i32, String), TlpmError> {
+        tracing::debug!("querying instrument error queue");
         let mut err_num: i32 = 0;
         let mut buffer = [0i8; sys::TLPM_ERR_DESCR_BUFFER_SIZE as usize];
         self.check_status(
@@ -270,7 +307,17 @@ impl PowerMeter {
         Ok((err_num, msg))
     }
 
+    /// Enable or disable the automatic error query mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - `true` to enable automatic error queries, `false` to disable.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn error_query_mode(&self, mode: bool) -> Result<(), TlpmError> {
+        tracing::debug!("setting error query mode to {}", mode);
         let c_mode = if mode { VI_TRUE } else { VI_FALSE };
         self.check_status(
             unsafe { sys::TLPMX_errorQueryMode(self.session, c_mode) },
@@ -278,7 +325,21 @@ impl PowerMeter {
         )
     }
 
+    /// Export the current instrument settings as a JSON string.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_size` - The maximum string buffer size to allocate for the JSON payload.
+    ///
+    /// # Returns
+    ///
+    /// A JSON string containing the instrument configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn export_settings_as_json(&self, max_size: u32) -> Result<String, TlpmError> {
+        tracing::debug!("exporting settings as JSON (max size: {})", max_size);
         let mut buffer = vec![0i8; max_size as usize];
         self.check_status(
             unsafe { sys::TLPMX_exportSettingsAsJson(self.session, buffer.as_mut_ptr(), max_size) },
@@ -290,11 +351,23 @@ impl PowerMeter {
         Ok(msg)
     }
 
+    /// Import instrument settings from a JSON string.
+    ///
+    /// # Arguments
+    ///
+    /// * `adapt` - `true` to adapt the settings to the current sensor if they differ.
+    /// * `json_settings` - The JSON configuration string.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` if the JSON string contains a null byte,
+    /// or `TlpmError::VisaError` if the device responds with an error code.
     pub fn import_settings_from_json(
         &self,
         adapt: bool,
         json_settings: &str,
     ) -> Result<(), TlpmError> {
+        tracing::debug!("importing settings from JSON (adapt: {})", adapt);
         let c_adapt = if adapt { VI_TRUE } else { VI_FALSE };
         let c_str = std::ffi::CString::new(json_settings)
             .map_err(|_| TlpmError::StringConversion("invalid JSON string".to_string()))?;
@@ -306,12 +379,29 @@ impl PowerMeter {
         )
     }
 
+    /// Send an NTP request to synchronize the instrument's time.
+    ///
+    /// # Arguments
+    ///
+    /// * `time_mode` - `true` for summertime, `false` for wintertime.
+    /// * `time_zone` - The UTC timezone offset in hours.
+    /// * `ip_address` - The IP address of the NTP server.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` for invalid IP strings,
+    /// or `TlpmError::VisaError` if the device responds with an error code.
     pub fn send_ntp_request(
         &self,
         time_mode: bool,
         time_zone: i16,
         ip_address: &str,
     ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "sending NTP request to {} (tz offset: {})",
+            ip_address,
+            time_zone
+        );
         let c_mode = if time_mode { VI_TRUE } else { VI_FALSE };
         let c_ip = std::ffi::CString::new(ip_address)
             .map_err(|_| TlpmError::StringConversion("invalid IP".to_string()))?;
@@ -323,7 +413,17 @@ impl PowerMeter {
         )
     }
 
+    /// Execute the instrument's internal self-test routine.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(test_result_code, description)`. A code of 0 typically indicates success.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the communication fails during the test.
     pub fn self_test(&self) -> Result<(i16, String), TlpmError> {
+        tracing::debug!("executing device self-test");
         let mut result: i16 = 0;
         let mut buffer = [0i8; sys::TLPM_BUFFER_SIZE as usize];
         self.check_status(
@@ -336,7 +436,17 @@ impl PowerMeter {
         Ok((result, msg))
     }
 
+    /// Query the driver and firmware revision strings.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(driver_revision, firmware_revision)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn revision_query(&self) -> Result<(String, String), TlpmError> {
+        tracing::debug!("querying firmware and driver revisions");
         let mut drv_rev = [0i8; sys::TLPM_BUFFER_SIZE as usize];
         let mut fw_rev = [0i8; sys::TLPM_BUFFER_SIZE as usize];
         self.check_status(

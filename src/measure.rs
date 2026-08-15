@@ -100,6 +100,14 @@ impl PowerMeter {
     );
 
     /// Read the EMM temperature.
+    ///
+    /// # Returns
+    ///
+    /// The measured EMM temperature in degrees Celsius.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn meas_emm_temperature(&self) -> Result<f64, TlpmError> {
         tracing::debug!("measuring EMM temperature");
         let mut value: f64 = 0.0;
@@ -111,6 +119,14 @@ impl PowerMeter {
     }
 
     /// Read the EMM humidity.
+    ///
+    /// # Returns
+    ///
+    /// The measured EMM humidity in percent.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn meas_emm_humidity(&self) -> Result<f64, TlpmError> {
         tracing::debug!("measuring EMM humidity");
         let mut value: f64 = 0.0;
@@ -123,9 +139,19 @@ impl PowerMeter {
 
     /// Read the X and Y positions from a 4-Quadrant detector.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(x_pos, y_pos)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn meas_4q_positions(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("measuring 4Q positions on channel {}", channel);
         let mut x: f64 = 0.0;
         let mut y: f64 = 0.0;
         self.check_status(
@@ -137,9 +163,19 @@ impl PowerMeter {
 
     /// Read the four individual quadrant voltages from a 4-Quadrant detector.
     ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
     /// # Returns
+    ///
     /// A tuple containing `(voltage1, voltage2, voltage3, voltage4)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn meas_4q_voltages(&self, channel: u16) -> Result<(f64, f64, f64, f64), TlpmError> {
+        tracing::debug!("measuring 4Q voltages on channel {}", channel);
         let mut v1: f64 = 0.0;
         let mut v2: f64 = 0.0;
         let mut v3: f64 = 0.0;
@@ -157,11 +193,24 @@ impl PowerMeter {
     /// Measure both channels simultaneously on a dual-channel meter.
     ///
     /// # Arguments
+    ///
     /// * `measurement_unit` - The unit to measure (e.g., 0 for Power, 1 for Current, 2 for Voltage).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(value_channel_1, value_channel_2)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn meas_dual_channel_simultaneous(
         &self,
         measurement_unit: u16,
     ) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!(
+            "measuring dual channel simultaneously (unit: {})",
+            measurement_unit
+        );
         let mut val1: f64 = 0.0;
         let mut val2: f64 = 0.0;
 
@@ -180,7 +229,20 @@ impl PowerMeter {
     }
 
     /// Retrieve the state of the measurement fetch operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// `true` if measurement data is available to fetch, `false` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fetch_state(&self, channel: u16) -> Result<bool, TlpmError> {
+        tracing::debug!("getting fetch state on channel {}", channel);
         let mut state: sys::ViBoolean = 0;
         self.check_status(
             unsafe { sys::TLPMX_getFetchState(self.session, &mut state, channel) },
@@ -190,7 +252,20 @@ impl PowerMeter {
     }
 
     /// Retrieve the maximum fast samplerate for the active sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// The maximum fast samplerate in Hz.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn get_fast_max_samplerate(&self, channel: u16) -> Result<u32, TlpmError> {
+        tracing::debug!("getting fast max samplerate on channel {}", channel);
         let mut rate: u32 = 0;
         self.check_status(
             unsafe { sys::TLPMX_getFastMaxSamplerate(self.session, &mut rate, channel) },

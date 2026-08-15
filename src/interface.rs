@@ -241,7 +241,22 @@ impl PowerMeter {
         I2cMode::try_from(mode_code as u16)
     }
 
+    /// Read data via the instrument's I2C interface.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The I2C address to read from.
+    /// * `count` - The number of bytes to read.
+    ///
+    /// # Returns
+    ///
+    /// The packed data read from the I2C bus.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn i2c_read(&self, address: u32, count: u32) -> Result<u32, TlpmError> {
+        tracing::debug!("reading {} bytes from i2c address {:#X}", count, address);
         let mut data_read: u32 = 0;
         self.check_status(
             unsafe { sys::TLPMX_I2CRead(self.session, address, count, &mut data_read) },
@@ -250,7 +265,18 @@ impl PowerMeter {
         Ok(data_read)
     }
 
+    /// Write hexadecimal data to the instrument's I2C interface.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The I2C address to write to.
+    /// * `hex_data` - A hexadecimal string representation of the data to write.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` for invalid strings, or `TlpmError::VisaError`.
     pub fn i2c_write(&self, address: u32, hex_data: &str) -> Result<(), TlpmError> {
+        tracing::debug!("writing to i2c address {:#X}: {}", address, hex_data);
         let c_str = std::ffi::CString::new(hex_data)
             .map_err(|_| TlpmError::StringConversion("invalid hex string".to_string()))?;
         self.check_status(
@@ -259,12 +285,32 @@ impl PowerMeter {
         )
     }
 
+    /// Perform a combined write-then-read operation on the I2C interface.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The I2C address.
+    /// * `hex_send_data` - The hexadecimal string data to write.
+    /// * `count` - The number of bytes to read after writing.
+    ///
+    /// # Returns
+    ///
+    /// The packed data read from the I2C bus.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` for invalid strings, or `TlpmError::VisaError`.
     pub fn i2c_write_read(
         &self,
         address: u32,
         hex_send_data: &str,
         count: u32,
     ) -> Result<u32, TlpmError> {
+        tracing::debug!(
+            "i2c write/read at address {:#X} (count: {})",
+            address,
+            count
+        );
         let c_str = std::ffi::CString::new(hex_send_data)
             .map_err(|_| TlpmError::StringConversion("invalid hex string".to_string()))?;
         let mut data_read: u32 = 0;
@@ -283,7 +329,17 @@ impl PowerMeter {
         Ok(data_read)
     }
 
+    /// Write a raw SCPI command string directly to the instrument.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The SCPI command string to send.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` for invalid strings, or `TlpmError::VisaError`.
     pub fn write_raw(&self, command: &str) -> Result<(), TlpmError> {
+        tracing::debug!("writing raw SCPI command: {}", command);
         let c_str = std::ffi::CString::new(command)
             .map_err(|_| TlpmError::StringConversion("invalid command string".to_string()))?;
         self.check_status(
@@ -292,7 +348,21 @@ impl PowerMeter {
         )
     }
 
+    /// Read raw response data directly from the instrument.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The maximum number of bytes to read.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(response_string, bytes_read)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn read_raw(&self, size: u32) -> Result<(String, u32), TlpmError> {
+        tracing::debug!("reading raw data (max size: {})", size);
         let mut buffer = vec![0i8; size as usize];
         let mut return_count: u32 = 0;
         self.check_status(
@@ -307,14 +377,39 @@ impl PowerMeter {
         Ok((msg, return_count))
     }
 
+    /// Write directly to a specific instrument status register.
+    ///
+    /// # Arguments
+    ///
+    /// * `reg` - The register address/index.
+    /// * `value` - The value to write.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn write_register(&self, reg: i16, value: i16) -> Result<(), TlpmError> {
+        tracing::debug!("writing {} to register {}", value, reg);
         self.check_status(
             unsafe { sys::TLPMX_writeRegister(self.session, reg, value) },
             "write_register",
         )
     }
 
+    /// Read a value directly from a specific instrument status register.
+    ///
+    /// # Arguments
+    ///
+    /// * `reg` - The register address/index.
+    ///
+    /// # Returns
+    ///
+    /// The integer value read from the register.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn read_register(&self, reg: i16) -> Result<i16, TlpmError> {
+        tracing::debug!("reading from register {}", reg);
         let mut value: i16 = 0;
         self.check_status(
             unsafe { sys::TLPMX_readRegister(self.session, reg, &mut value) },
@@ -323,7 +418,13 @@ impl PowerMeter {
         Ok(value)
     }
 
+    /// Preset the instrument status registers to their default state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
     pub fn preset_register(&self) -> Result<(), TlpmError> {
+        tracing::debug!("presetting registers");
         self.check_status(
             unsafe { sys::TLPMX_presetRegister(self.session) },
             "preset_register",

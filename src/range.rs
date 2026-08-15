@@ -259,4 +259,81 @@ impl PowerMeter {
             "set_voltage_range_search",
         )
     }
+
+    /// Read the lower and upper frequency bounds for the active sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(lower_frequency, upper_frequency)` in Hertz.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_freq_range(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting frequency range on channel {}", channel);
+        let mut lower: f64 = 0.0;
+        let mut upper: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFreqRange(self.session, &mut lower, &mut upper, channel) },
+            "get_freq_range",
+        )?;
+        Ok((lower, upper))
+    }
+
+    /// Read all available current measurement ranges for the connected sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A vector of `f64` values representing the available current ranges in Amperes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_current_ranges(&self, channel: u16) -> Result<Vec<f64>, TlpmError> {
+        tracing::debug!("getting current ranges on channel {}", channel);
+        // Allocate a generous buffer; instrument ranges rarely exceed 20 discrete steps
+        let mut values = [0.0f64; 64];
+        let mut count: u16 = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getCurrentRanges(self.session, values.as_mut_ptr(), &mut count, channel)
+            },
+            "get_current_ranges",
+        )?;
+        Ok(values[..count as usize].to_vec())
+    }
+
+    /// Read all available voltage measurement ranges for the connected sensor.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A vector of `f64` values representing the available voltage ranges in Volts.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_voltage_ranges(&self, channel: u16) -> Result<Vec<f64>, TlpmError> {
+        tracing::debug!("getting voltage ranges on channel {}", channel);
+        let mut values = [0.0f64; 64];
+        let mut count: u16 = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getVoltageRanges(self.session, values.as_mut_ptr(), &mut count, channel)
+            },
+            "get_voltage_ranges",
+        )?;
+        Ok(values[..count as usize].to_vec())
+    }
 }
