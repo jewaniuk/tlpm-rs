@@ -230,19 +230,18 @@ pub struct PowerMeter {
     _marker: PhantomData<*const ()>,
 }
 
-// macro for stamping out boolean state getters and setters
-macro_rules! impl_bool_property {
-    ($setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $doc_name:expr) => {
+// unified macro for generating boilerplate getter and setter properties
+macro_rules! impl_property {
+    // 1. boolean properties that require a channel
+    (bool, channel, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $doc_name:expr) => {
         #[doc = concat!("Set the ", $doc_name, ".")]
         ///
         /// # Arguments
-        ///
         /// * `value` - The new state to apply.
         /// * `channel` - The sensor channel (typically `1`).
         ///
         /// # Errors
-        ///
-        /// Retrurns a `Tlpm::VisaError` if the device responds with an error code.
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
         pub fn $setter_name(&self, value: bool, channel: u16) -> Result<(), TlpmError> {
             tracing::debug!(
                 concat!("setting ", $doc_name, " to {} on channel {}"),
@@ -259,15 +258,12 @@ macro_rules! impl_bool_property {
         #[doc = concat!("Get the ", $doc_name, " state.")]
         ///
         /// # Arguments
-        ///
         /// * `channel` - The sensor channel (typically `1`).
         ///
         /// # Returns
-        ///
         /// The current boolean state.
         ///
         /// # Errors
-        ///
         /// Returns a `TlpmError::VisaError` if the device responds with an error code.
         pub fn $getter_name(&self, channel: u16) -> Result<bool, TlpmError> {
             tracing::debug!(concat!("getting ", $doc_name, " on channel {}"), channel);
@@ -279,20 +275,52 @@ macro_rules! impl_bool_property {
             Ok(c_value == VI_TRUE)
         }
     };
-}
 
-// macro for stamping out numeric parameter getters and setters
-macro_rules! impl_numeric_property {
-    ($setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
+    // 2. boolean global properties (no channel)
+    (bool, global, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $doc_name:expr) => {
         #[doc = concat!("Set the ", $doc_name, ".")]
         ///
         /// # Arguments
+        /// * `value` - The new state to apply.
         ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $setter_name(&self, value: bool) -> Result<(), TlpmError> {
+            tracing::debug!(concat!("setting ", $doc_name, " to {}"), value);
+            let c_value = if value { VI_TRUE } else { VI_FALSE };
+            self.check_status(
+                unsafe { sys::$sys_setter(self.session, c_value) },
+                stringify!($setter_name),
+            )
+        }
+
+        #[doc = concat!("Get the ", $doc_name, " state.")]
+        ///
+        /// # Returns
+        /// The current boolean state.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $getter_name(&self) -> Result<bool, TlpmError> {
+            tracing::debug!(concat!("getting ", $doc_name));
+            let mut c_value: sys::ViBoolean = 0;
+            self.check_status(
+                unsafe { sys::$sys_getter(self.session, &mut c_value) },
+                stringify!($getter_name),
+            )?;
+            Ok(c_value == VI_TRUE)
+        }
+    };
+
+    // 3. numeric properties that require an attribute and a channel
+    (numeric, attr_channel, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
+        #[doc = concat!("Set the ", $doc_name, ".")]
+        ///
+        /// # Arguments
         /// * `value` - The new numeric value to apply.
         /// * `channel` - The sensor channel (typically `1`).
         ///
         /// # Errors
-        ///
         /// Returns a `TlpmError::VisaError` if the device responds with an error code.
         pub fn $setter_name(&self, value: $ty, channel: u16) -> Result<(), TlpmError> {
             tracing::debug!(concat!("setting ", $doc_name, " on channel {}"), channel);
@@ -305,16 +333,13 @@ macro_rules! impl_numeric_property {
         #[doc = concat!("Get the ", $doc_name, ".")]
         ///
         /// # Arguments
-        ///
         /// * `attribute` - The attribute to query (e.g., Set, Min, Max, Default).
         /// * `channel` - The sensor channel (typically `1`).
         ///
         /// # Returns
-        ///
         /// The queried numeric value.
         ///
         /// # Errors
-        ///
         /// Returns a `TlpmError::VisaError` if the device responds with an error code.
         pub fn $getter_name(
             &self,
@@ -328,6 +353,81 @@ macro_rules! impl_numeric_property {
                 stringify!($getter_name),
             )?;
             Ok(value)
+        }
+    };
+
+    // 4. simple numeric global properties (no attribute, no channel)
+    (numeric, global, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $ty:ty, $doc_name:expr) => {
+        #[doc = concat!("Set the ", $doc_name, ".")]
+        ///
+        /// # Arguments
+        /// * `value` - The new numeric value to apply.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $setter_name(&self, value: $ty) -> Result<(), TlpmError> {
+            tracing::debug!(concat!("setting ", $doc_name));
+            self.check_status(
+                unsafe { sys::$sys_setter(self.session, value) },
+                stringify!($setter_name),
+            )
+        }
+
+        #[doc = concat!("Get the ", $doc_name, ".")]
+        ///
+        /// # Returns
+        /// The queried numeric value.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $getter_name(&self) -> Result<$ty, TlpmError> {
+            tracing::debug!(concat!("getting ", $doc_name));
+            let mut value: $ty = Default::default();
+            self.check_status(
+                unsafe { sys::$sys_getter(self.session, &mut value) },
+                stringify!($getter_name),
+            )?;
+            Ok(value)
+        }
+    };
+
+    // 5. string global properties (network and hostname configurations)
+    (string, global, $setter_name:ident, $getter_name:ident, $sys_setter:ident, $sys_getter:ident, $doc_name:expr) => {
+        #[doc = concat!("Set the ", $doc_name, ".")]
+        ///
+        /// # Arguments
+        /// * `value` - The string value to apply.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::StringConversion` if the string contains a null byte,
+        /// or a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $setter_name(&self, value: &str) -> Result<(), TlpmError> {
+            tracing::debug!(concat!("setting ", $doc_name));
+            let c_value = CString::new(value).map_err(|_| {
+                TlpmError::StringConversion("string contains null byte".to_string())
+            })?;
+            self.check_status(
+                unsafe { sys::$sys_setter(self.session, c_value.as_ptr() as *mut _) },
+                stringify!($setter_name),
+            )
+        }
+
+        #[doc = concat!("Get the ", $doc_name, ".")]
+        ///
+        /// # Returns
+        /// The queried string value.
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $getter_name(&self) -> Result<String, TlpmError> {
+            tracing::debug!(concat!("getting ", $doc_name));
+            let mut buffer = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+            self.check_status(
+                unsafe { sys::$sys_getter(self.session, buffer.as_mut_ptr()) },
+                stringify!($getter_name),
+            )?;
+            let c_str = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+            Ok(c_str.to_string_lossy().into_owned())
         }
     };
 }
@@ -611,7 +711,9 @@ impl PowerMeter {
     // input and averaging configuration
     // =======================================================================
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_input_filter_state,
         get_input_filter_state,
         TLPMX_setInputFilterState,
@@ -619,7 +721,9 @@ impl PowerMeter {
         "input filter state"
     );
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_accel_state,
         get_accel_state,
         TLPMX_setAccelState,
@@ -627,7 +731,9 @@ impl PowerMeter {
         "acceleration state"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_avg_time,
         get_avg_time,
         TLPMX_setAvgTime,
@@ -640,7 +746,9 @@ impl PowerMeter {
     // corrections and responsivity configuration
     // =======================================================================
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_wavelength,
         get_wavelength,
         TLPMX_setWavelength,
@@ -649,7 +757,9 @@ impl PowerMeter {
         "wavelength"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_attenuation,
         get_attenuation,
         TLPMX_setAttenuation,
@@ -658,7 +768,9 @@ impl PowerMeter {
         "attenuation"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_beam_dia,
         get_beam_dia,
         TLPMX_setBeamDia,
@@ -667,7 +779,9 @@ impl PowerMeter {
         "beam diameter"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_photodiode_responsivity,
         get_photodiode_responsivity,
         TLPMX_setPhotodiodeResponsivity,
@@ -676,7 +790,9 @@ impl PowerMeter {
         "photodiode responsivity"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_thermopile_responsivity,
         get_thermopile_responsivity,
         TLPMX_setThermopileResponsivity,
@@ -685,7 +801,9 @@ impl PowerMeter {
         "thermopile responsivity"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_pyrosensor_responsivity,
         get_pyrosensor_responsivity,
         TLPMX_setPyrosensorResponsivity,
@@ -742,7 +860,9 @@ impl PowerMeter {
         PowerUnit::try_from(unit_code)
     }
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_power_auto_range,
         get_power_auto_range,
         TLPMX_setPowerAutoRange,
@@ -750,7 +870,9 @@ impl PowerMeter {
         "power auto-range mode"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_power_range,
         get_power_range,
         TLPMX_setPowerRange,
@@ -759,7 +881,9 @@ impl PowerMeter {
         "power range"
     );
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_power_ref_state,
         get_power_ref_state,
         TLPMX_setPowerRefState,
@@ -767,7 +891,9 @@ impl PowerMeter {
         "power reference state"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_power_ref,
         get_power_ref,
         TLPMX_setPowerRef,
@@ -780,7 +906,9 @@ impl PowerMeter {
     // current measurement configuration
     // =======================================================================
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_current_auto_range,
         get_current_auto_range,
         TLPMX_setCurrentAutoRange,
@@ -788,7 +916,9 @@ impl PowerMeter {
         "current auto-range mode"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_current_range,
         get_current_range,
         TLPMX_setCurrentRange,
@@ -797,7 +927,9 @@ impl PowerMeter {
         "current range"
     );
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_current_ref_state,
         get_current_ref_state,
         TLPMX_setCurrentRefState,
@@ -805,7 +937,9 @@ impl PowerMeter {
         "current reference state"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_current_ref,
         get_current_ref,
         TLPMX_setCurrentRef,
@@ -818,7 +952,9 @@ impl PowerMeter {
     // voltage measurement configuration
     // =======================================================================
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_voltage_auto_range,
         get_voltage_auto_range,
         TLPMX_setVoltageAutoRange,
@@ -826,7 +962,9 @@ impl PowerMeter {
         "voltage auto-range mode"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_voltage_range,
         get_voltage_range,
         TLPMX_setVoltageRange,
@@ -835,7 +973,9 @@ impl PowerMeter {
         "voltage range"
     );
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_voltage_ref_state,
         get_voltage_ref_state,
         TLPMX_setVoltageRefState,
@@ -843,7 +983,9 @@ impl PowerMeter {
         "voltage reference state"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_voltage_ref,
         get_voltage_ref,
         TLPMX_setVoltageRef,
@@ -856,7 +998,9 @@ impl PowerMeter {
     // energy measurement configuration
     // =======================================================================
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_energy_auto_range,
         get_energy_auto_range,
         TLPMX_setEnergyAutoRange,
@@ -864,7 +1008,9 @@ impl PowerMeter {
         "energy auto-range mode"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_energy_range,
         get_energy_range,
         TLPMX_setEnergyRange,
@@ -873,7 +1019,9 @@ impl PowerMeter {
         "energy range"
     );
 
-    impl_bool_property!(
+    impl_property!(
+        bool,
+        channel,
         set_energy_ref_state,
         get_energy_ref_state,
         TLPMX_setEnergyRefState,
@@ -881,7 +1029,9 @@ impl PowerMeter {
         "energy reference state"
     );
 
-    impl_numeric_property!(
+    impl_property!(
+        numeric,
+        attr_channel,
         set_energy_ref,
         get_energy_ref,
         TLPMX_setEnergyRef,
@@ -1239,6 +1389,675 @@ impl PowerMeter {
         )?;
 
         DigIoPinMode::try_from(mode_code)
+    }
+
+    // =======================================================================
+    // serial interface and communication configuration
+    // =======================================================================
+
+    impl_property!(
+        numeric,
+        global,
+        set_device_baudrate,
+        get_device_baudrate,
+        TLPMX_setDeviceBaudrate,
+        TLPMX_getDeviceBaudrate,
+        u32,
+        "device baudrate"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_driver_baudrate,
+        get_driver_baudrate,
+        TLPMX_setDriverBaudrate,
+        TLPMX_getDriverBaudrate,
+        u32,
+        "driver baudrate"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_timeout_value,
+        get_timeout_value,
+        TLPMX_setTimeoutValue,
+        TLPMX_getTimeoutValue,
+        u32,
+        "communication timeout value in milliseconds"
+    );
+
+    // =======================================================================
+    // ethernet and network configuration
+    // =======================================================================
+
+    impl_property!(
+        string,
+        global,
+        set_ip_address,
+        get_ip_address,
+        TLPMX_setIPAddress,
+        TLPMX_getIPAddress,
+        "ip address"
+    );
+
+    impl_property!(
+        string,
+        global,
+        set_ip_mask,
+        get_ip_mask,
+        TLPMX_setIPMask,
+        TLPMX_getIPMask,
+        "subnet mask"
+    );
+
+    impl_property!(
+        string,
+        global,
+        set_gateway,
+        get_gateway,
+        TLPMX_setGateway,
+        TLPMX_getGateway,
+        "default gateway"
+    );
+
+    impl_property!(
+        string,
+        global,
+        set_hostname,
+        get_hostname,
+        TLPMX_setHostname,
+        TLPMX_getHostname,
+        "hostname"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_dhcp,
+        get_dhcp,
+        TLPMX_setDHCP,
+        TLPMX_getDHCP,
+        "dhcp state"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_web_port,
+        get_web_port,
+        TLPMX_setWebPort,
+        TLPMX_getWebPort,
+        u32,
+        "web server port"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_scpi_port,
+        get_scpi_port,
+        TLPMX_setSCPIPort,
+        TLPMX_getSCPIPort,
+        u32,
+        "scpi port"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_dfu_port,
+        get_dfu_port,
+        TLPMX_setDFUPort,
+        TLPMX_getDFUPort,
+        u32,
+        "dfu port"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_lan_propagation,
+        get_lan_propagation,
+        TLPMX_setLANPropagation,
+        TLPMX_getLANPropagation,
+        "lan propagation state"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_enable_net_search,
+        get_enable_net_search,
+        TLPMX_setEnableNetSearch,
+        TLPMX_getEnableNetSearch,
+        "enable network search state"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_look_for_info_on_search,
+        get_look_for_info_on_search,
+        TLPMX_setLookForInfoOnSearch,
+        TLPMX_getLookForInfoOnSearch,
+        "look for info on search state"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_enable_bth_search,
+        get_enable_bth_search,
+        TLPMX_setEnableBthSearch,
+        TLPMX_getEnableBthSearch,
+        "enable bluetooth search state"
+    );
+
+    /// Retrieve the instrument's MAC address.
+    ///
+    /// # Returns
+    ///
+    /// The MAC address string.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_mac_address(&self) -> Result<String, TlpmError> {
+        tracing::debug!("getting mac address");
+        let mut buffer = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        self.check_status(
+            unsafe { sys::TLPMX_getMACAddress(self.session, buffer.as_mut_ptr()) },
+            "get_mac_address",
+        )?;
+        let c_str = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        Ok(c_str.to_string_lossy().into_owned())
+    }
+
+    /// Set the network search mask.
+    ///
+    /// # Arguments
+    ///
+    /// * `net_mask` - The search mask string to apply.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` if the string contains a null byte,
+    /// or a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_net_search_mask(&self, net_mask: &str) -> Result<(), TlpmError> {
+        tracing::debug!("setting network search mask");
+        let c_value = CString::new(net_mask)
+            .map_err(|_| TlpmError::StringConversion("string contains null byte".to_string()))?;
+        self.check_status(
+            unsafe { sys::TLPMX_setNetSearchMask(self.session, c_value.as_ptr() as *mut _) },
+            "set_net_search_mask",
+        )
+    }
+
+    // =======================================================================
+    // display and system configuration
+    // =======================================================================
+
+    impl_property!(
+        numeric,
+        global,
+        set_disp_brightness,
+        get_disp_brightness,
+        TLPMX_setDispBrightness,
+        TLPMX_getDispBrightness,
+        f64,
+        "display brightness"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_disp_contrast,
+        get_disp_contrast,
+        TLPMX_setDispContrast,
+        TLPMX_getDispContrast,
+        f64,
+        "display contrast"
+    );
+
+    impl_property!(
+        numeric,
+        global,
+        set_line_frequency,
+        get_line_frequency,
+        TLPMX_setLineFrequency,
+        TLPMX_getLineFrequency,
+        i16,
+        "line frequency"
+    );
+
+    impl_property!(
+        bool,
+        global,
+        set_summertime,
+        get_summertime,
+        TLPMX_setSummertime,
+        TLPMX_getSummertime,
+        "summertime (daylight saving) state"
+    );
+
+    impl_property!(
+        string,
+        global,
+        set_display_name,
+        get_display_name,
+        TLPMX_setDisplayName,
+        TLPMX_getDisplayName,
+        "display name"
+    );
+
+    /// Set the system time of the device.
+    ///
+    /// # Arguments
+    ///
+    /// * `year` - The year (e.g., 2026).
+    /// * `month` - The month (1-12).
+    /// * `day` - The day (1-31).
+    /// * `hour` - The hour (0-23).
+    /// * `minute` - The minute (0-59).
+    /// * `second` - The second (0-59).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_time(
+        &self,
+        year: i16,
+        month: i16,
+        day: i16,
+        hour: i16,
+        minute: i16,
+        second: i16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting system time");
+        self.check_status(
+            unsafe { sys::TLPMX_setTime(self.session, year, month, day, hour, minute, second) },
+            "set_time",
+        )
+    }
+
+    /// Retrieve the system time of the device.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(year, month, day, hour, minute, second)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_time(&self) -> Result<(i16, i16, i16, i16, i16, i16), TlpmError> {
+        tracing::debug!("getting system time");
+        let mut year: i16 = 0;
+        let mut month: i16 = 0;
+        let mut day: i16 = 0;
+        let mut hour: i16 = 0;
+        let mut minute: i16 = 0;
+        let mut second: i16 = 0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getTime(
+                    self.session,
+                    &mut year,
+                    &mut month,
+                    &mut day,
+                    &mut hour,
+                    &mut minute,
+                    &mut second,
+                )
+            },
+            "get_time",
+        )?;
+
+        Ok((year, month, day, hour, minute, second))
+    }
+
+    /// Retrieve the instrument's battery voltage.
+    ///
+    /// # Returns
+    ///
+    /// The battery voltage in Volts.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_battery_voltage(&self) -> Result<f64, TlpmError> {
+        tracing::debug!("getting battery voltage");
+        let mut voltage: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getBatteryVoltage(self.session, &mut voltage) },
+            "get_battery_voltage",
+        )?;
+        Ok(voltage)
+    }
+
+    /// Produce a beep sound from the device.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn beep(&self) -> Result<(), TlpmError> {
+        tracing::debug!("triggering device beep");
+        self.check_status(unsafe { sys::TLPMX_beep(self.session) }, "beep")
+    }
+
+    // =======================================================================
+    // shutter and hardware control
+    // =======================================================================
+
+    impl_property!(
+        bool,
+        global,
+        set_shutter_position,
+        get_shutter_position,
+        TLPMX_setShutterPosition,
+        TLPMX_getShutterPosition,
+        "shutter position"
+    );
+
+    // =======================================================================
+    // fan specific controls
+    // =======================================================================
+
+    /// Retrieve the current running state of the fan.
+    ///
+    /// # Arguments
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    /// `true` if the fan is running, `false` otherwise.
+    pub fn get_fan_state(&self, channel: u16) -> Result<bool, TlpmError> {
+        tracing::debug!("getting fan state on channel {}", channel);
+        let mut is_running: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFanState(self.session, &mut is_running, channel) },
+            "get_fan_state",
+        )?;
+        Ok(is_running == VI_TRUE)
+    }
+
+    /// Set the fan voltage.
+    ///
+    /// # Arguments
+    /// * `voltage` - The voltage to apply.
+    /// * `channel` - The sensor channel (typically `1`).
+    pub fn set_fan_voltage(&self, voltage: f64, channel: u16) -> Result<(), TlpmError> {
+        tracing::debug!("setting fan voltage to {} on channel {}", voltage, channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setFanVoltage(self.session, voltage, channel) },
+            "set_fan_voltage",
+        )
+    }
+
+    /// Retrieve the currently configured fan voltage.
+    pub fn get_fan_voltage(&self, channel: u16) -> Result<f64, TlpmError> {
+        tracing::debug!("getting fan voltage on channel {}", channel);
+        let mut voltage: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFanVoltage(self.session, &mut voltage, channel) },
+            "get_fan_voltage",
+        )?;
+        Ok(voltage)
+    }
+
+    /// Set the maximum and target RPM for the fan.
+    pub fn set_fan_rpm(
+        &self,
+        max_rpm: f64,
+        target_rpm: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting fan rpm on channel {}", channel);
+        self.check_status(
+            unsafe { sys::TLPMX_setFanRpm(self.session, max_rpm, target_rpm, channel) },
+            "set_fan_rpm",
+        )
+    }
+
+    /// Retrieve the maximum and target RPM for the fan.
+    ///
+    /// # Returns
+    /// A tuple containing `(max_rpm, target_rpm)`.
+    pub fn get_fan_rpm(&self, channel: u16) -> Result<(f64, f64), TlpmError> {
+        tracing::debug!("getting fan rpm on channel {}", channel);
+        let mut max_rpm: f64 = 0.0;
+        let mut target_rpm: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getFanRpm(self.session, &mut max_rpm, &mut target_rpm, channel) },
+            "get_fan_rpm",
+        )?;
+        Ok((max_rpm, target_rpm))
+    }
+
+    /// Retrieve the actual current RPM of the fan.
+    pub fn get_act_fan_rpm(&self, channel: u16) -> Result<f64, TlpmError> {
+        tracing::debug!("getting actual fan rpm on channel {}", channel);
+        let mut rpm: f64 = 0.0;
+        self.check_status(
+            unsafe { sys::TLPMX_getActFanRpm(self.session, &mut rpm, channel) },
+            "get_act_fan_rpm",
+        )?;
+        Ok(rpm)
+    }
+
+    /// Set the fan temperature adjustment parameters.
+    pub fn set_fan_adjust_parameters(
+        &self,
+        voltage_min: f64,
+        voltage_max: f64,
+        temperature_min: f64,
+        temperature_max: f64,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting fan adjust parameters on channel {}", channel);
+        self.check_status(
+            unsafe {
+                sys::TLPMX_setFanAdjustParameters(
+                    self.session,
+                    voltage_min,
+                    voltage_max,
+                    temperature_min,
+                    temperature_max,
+                    channel,
+                )
+            },
+            "set_fan_adjust_parameters",
+        )
+    }
+
+    /// Retrieve the fan temperature adjustment parameters.
+    ///
+    /// # Returns
+    /// A tuple containing `(voltage_min, voltage_max, temperature_min, temperature_max)`.
+    pub fn get_fan_adjust_parameters(
+        &self,
+        channel: u16,
+    ) -> Result<(f64, f64, f64, f64), TlpmError> {
+        tracing::debug!("getting fan adjust parameters on channel {}", channel);
+        let mut v_min: f64 = 0.0;
+        let mut v_max: f64 = 0.0;
+        let mut t_min: f64 = 0.0;
+        let mut t_max: f64 = 0.0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getFanAdjustParameters(
+                    self.session,
+                    &mut v_min,
+                    &mut v_max,
+                    &mut t_min,
+                    &mut t_max,
+                    channel,
+                )
+            },
+            "get_fan_adjust_parameters",
+        )?;
+        Ok((v_min, v_max, t_min, t_max))
+    }
+
+    // =======================================================================
+    // laser, encryption, and system info
+    // =======================================================================
+
+    /// Set the laser state, including frequency and duration.
+    pub fn set_laser_state(
+        &self,
+        state: bool,
+        frequency: u32,
+        duration: u32,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting laser state to {} (freq: {}, dur: {})",
+            state,
+            frequency,
+            duration
+        );
+        let c_state = if state { VI_TRUE } else { VI_FALSE };
+        self.check_status(
+            unsafe { sys::TLPMX_setLaserState(self.session, c_state, frequency, duration) },
+            "set_laser_state",
+        )
+    }
+
+    /// Retrieve the current boolean state of the laser.
+    pub fn get_laser_state(&self) -> Result<bool, TlpmError> {
+        tracing::debug!("getting laser state");
+        let mut state: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getLaserState(self.session, &mut state) },
+            "get_laser_state",
+        )?;
+        Ok(state == VI_TRUE)
+    }
+
+    /// Set the device encryption configuration.
+    pub fn set_encryption(
+        &self,
+        old_password: &str,
+        new_password: &str,
+        encryption_enabled: bool,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!("setting encryption state");
+        let c_old = CString::new(old_password)
+            .map_err(|_| TlpmError::StringConversion("invalid old password".to_string()))?;
+        let c_new = CString::new(new_password)
+            .map_err(|_| TlpmError::StringConversion("invalid new password".to_string()))?;
+        let c_enc = if encryption_enabled {
+            VI_TRUE
+        } else {
+            VI_FALSE
+        };
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_setEncryption(
+                    self.session,
+                    c_old.as_ptr() as *mut _,
+                    c_new.as_ptr() as *mut _,
+                    c_enc,
+                )
+            },
+            "set_encryption",
+        )
+    }
+
+    /// Retrieve the current encryption configuration.
+    ///
+    /// # Returns
+    /// A tuple containing `(password_string, encryption_enabled)`.
+    pub fn get_encryption(&self) -> Result<(String, bool), TlpmError> {
+        tracing::debug!("getting encryption state");
+        let mut password = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut is_encrypted: sys::ViBoolean = 0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getEncryption(self.session, password.as_mut_ptr(), &mut is_encrypted)
+            },
+            "get_encryption",
+        )?;
+
+        let c_str = unsafe { CStr::from_ptr(password.as_ptr()) };
+        Ok((
+            c_str.to_string_lossy().into_owned(),
+            is_encrypted == VI_TRUE,
+        ))
+    }
+
+    /// Retrieve the number of channels available on the connected instrument.
+    pub fn get_channels(&self) -> Result<u16, TlpmError> {
+        tracing::debug!("getting available channel count");
+        let mut channel_count: u16 = 0;
+        self.check_status(
+            unsafe { sys::TLPMX_getChannels(self.session, &mut channel_count) },
+            "get_channels",
+        )?;
+        Ok(channel_count)
+    }
+
+    /// Retrieve the calibration message for the sensor.
+    pub fn get_calibration_msg(&self, channel: u16) -> Result<String, TlpmError> {
+        tracing::debug!("getting calibration message on channel {}", channel);
+        let mut message = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        self.check_status(
+            unsafe { sys::TLPMX_getCalibrationMsg(self.session, message.as_mut_ptr(), channel) },
+            "get_calibration_msg",
+        )?;
+        let c_str = unsafe { CStr::from_ptr(message.as_ptr()) };
+        Ok(c_str.to_string_lossy().into_owned())
+    }
+
+    /// Retrieve comprehensive sensor information using the extended 32-bit flags.
+    ///
+    /// # Returns
+    /// A tuple containing `(name, serial_number, message, type, subtype, flags)`.
+    pub fn get_sensor_info(
+        &self,
+        channel: u16,
+    ) -> Result<(String, String, String, i16, i16, i32), TlpmError> {
+        tracing::debug!("getting sensor info on channel {}", channel);
+        let mut name = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut snr = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut message = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut p_type: i16 = 0;
+        let mut p_stype: i16 = 0;
+        let mut p_flags: i32 = 0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getSensorInfoExt(
+                    self.session,
+                    name.as_mut_ptr(),
+                    snr.as_mut_ptr(),
+                    message.as_mut_ptr(),
+                    &mut p_type,
+                    &mut p_stype,
+                    &mut p_flags,
+                    channel,
+                )
+            },
+            "get_sensor_info",
+        )?;
+
+        let to_string = |buf: &[i8]| -> String {
+            unsafe { CStr::from_ptr(buf.as_ptr()) }
+                .to_string_lossy()
+                .into_owned()
+        };
+
+        Ok((
+            to_string(&name),
+            to_string(&snr),
+            to_string(&message),
+            p_type,
+            p_stype,
+            p_flags,
+        ))
     }
 }
 
