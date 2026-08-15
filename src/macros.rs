@@ -207,3 +207,28 @@ macro_rules! impl_property {
         }
     };
 }
+
+// macro for stamping out single-point data acquisition methods
+macro_rules! impl_measure {
+    ($method_name:ident, $sys_func:ident, $doc_desc:expr, $unit:expr) => {
+        #[doc = concat!("Read the current ", $doc_desc, " from the connected sensor.")]
+        ///
+        /// # Arguments
+        /// * `channel` - The sensor channel to read from (typically `1`).
+        ///
+        /// # Returns
+        #[doc = concat!("The measured ", $doc_desc, " in ", $unit, ".")]
+        ///
+        /// # Errors
+        /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+        pub fn $method_name(&self, channel: u16) -> Result<f64, TlpmError> {
+            tracing::debug!(concat!("measuring ", $doc_desc, " on channel {}"), channel);
+            let mut value: f64 = 0.0;
+            self.check_status(
+                unsafe { sys::$sys_func(self.session, &mut value, channel) },
+                stringify!($method_name),
+            )?;
+            Ok(value)
+        }
+    };
+}
