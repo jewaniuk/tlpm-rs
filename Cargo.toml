@@ -2,6 +2,11 @@
 name = "tlpm-rs"
 version = "0.1.0"
 edition = "2024"
+description = "Safe Rust FFI bindings for Thorlabs PM-series optical power meters."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jewaniuk/tlpm-rs"
+keywords = ["thorlabs", "hardware", "ffi", "visa", "optics"]
+categories = ["hardware-support", "api-bindings", "science"]
 
 [dependencies]
 libc = "0.2.189"
