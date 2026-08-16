@@ -748,4 +748,508 @@ impl PowerMeter {
 
         Ok((timestamps, values1, values2))
     }
+
+    /// Configure a power measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time/timebase parameter for the sequence.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_power_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring power measurement sequence (base time: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_confPowerMeasurementSequence(self.session, base_time, channel) },
+            "conf_power_measurement_sequence",
+        )
+    }
+
+    /// Configure a hardware-triggered power measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `trig_src` - The trigger source index.
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_power_measurement_sequence_hw_trigger(
+        &self,
+        trig_src: u16,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring power sequence hw trigger (src: {}, base: {}, hpos: {}) on channel {}",
+            trig_src,
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_confPowerMeasurementSequenceHWTrigger(
+                    self.session,
+                    trig_src,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "conf_power_measurement_sequence_hw_trigger",
+        )
+    }
+
+    /// Configure a current measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time/timebase parameter for the sequence.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_current_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring current measurement sequence (base time: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_confCurrentMeasurementSequence(self.session, base_time, channel) },
+            "conf_current_measurement_sequence",
+        )
+    }
+
+    /// Configure a hardware-triggered current measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `trig_src` - The trigger source index.
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_current_measurement_sequence_hw_trigger(
+        &self,
+        trig_src: u16,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring current sequence hw trigger (src: {}, base: {}, hpos: {}) on channel {}",
+            trig_src,
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_confCurrentMeasurementSequenceHWTrigger(
+                    self.session,
+                    trig_src,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "conf_current_measurement_sequence_hw_trigger",
+        )
+    }
+
+    /// Configure a voltage measurement sequence.
+    ///
+    /// Note: This safely wraps the misspelled `TLPMX_confVolatgeMeasurementSequence` C-API function.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time/timebase parameter for the sequence.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_voltage_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring voltage measurement sequence (base time: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_confVolatgeMeasurementSequence(self.session, base_time, channel) },
+            "conf_voltage_measurement_sequence",
+        )
+    }
+
+    /// Configure a hardware-triggered voltage measurement sequence.
+    ///
+    /// Note: This safely wraps the misspelled `TLPMX_confVolatgeMeasurementSequenceHWTrigger` C-API function.
+    ///
+    /// # Arguments
+    ///
+    /// * `trig_src` - The trigger source index.
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_voltage_measurement_sequence_hw_trigger(
+        &self,
+        trig_src: u16,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring voltage sequence hw trigger (src: {}, base: {}, hpos: {}) on channel {}",
+            trig_src,
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_confVolatgeMeasurementSequenceHWTrigger(
+                    self.session,
+                    trig_src,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "conf_voltage_measurement_sequence_hw_trigger",
+        )
+    }
+
+    /// Configure a power density measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time/timebase parameter for the sequence.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn conf_p_den_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "configuring power density measurement sequence (base time: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_confPDENMeasurementSequence(self.session, base_time, channel) },
+            "conf_p_den_measurement_sequence",
+        )
+    }
+
+    /// Start the configured measurement sequence.
+    ///
+    /// **WARNING:** This function may block the calling thread while awaiting the hardware sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `auto_trigger_delay` - The delay before auto-triggering.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the trigger was forced, `false` otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn start_measurement_sequence(&self, auto_trigger_delay: u32) -> Result<bool, TlpmError> {
+        tracing::debug!(
+            "starting measurement sequence (auto delay: {})",
+            auto_trigger_delay
+        );
+        let mut forced: sys::ViBoolean = 0;
+        self.check_status(
+            unsafe {
+                sys::TLPMX_startMeasurementSequence(self.session, auto_trigger_delay, &mut forced)
+            },
+            "start_measurement_sequence",
+        )?;
+        Ok(forced == crate::VI_TRUE)
+    }
+
+    /// Retrieve the data from a completed measurement sequence.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time matching the configuration.
+    /// * `expected_count` - The number of points expected (required to safely size the return buffers).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing `(timestamps, values1, values2)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_measurement_sequence(
+        &self,
+        base_time: u32,
+        expected_count: usize,
+    ) -> Result<(Vec<f32>, Vec<f32>, Vec<f32>), TlpmError> {
+        tracing::debug!(
+            "getting measurement sequence (base time: {}, expected: {})",
+            base_time,
+            expected_count
+        );
+        let mut timestamps = vec![0.0f32; expected_count];
+        let mut values = vec![0.0f32; expected_count];
+        let mut values2 = vec![0.0f32; expected_count];
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getMeasurementSequence(
+                    self.session,
+                    base_time,
+                    timestamps.as_mut_ptr(),
+                    values.as_mut_ptr(),
+                    values2.as_mut_ptr(),
+                )
+            },
+            "get_measurement_sequence",
+        )?;
+
+        Ok((timestamps, values, values2))
+    }
+
+    /// Block and measure a power measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn meas_power_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring power sequence (base: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe { sys::TLPMX_measPowerMeasurementSequence(self.session, base_time, channel) },
+            "meas_power_measurement_sequence",
+        )
+    }
+
+    /// Block and measure a hardware-triggered power measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn meas_power_measurement_sequence_hw_trigger(
+        &self,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring power sequence hw trigger (base: {}, hpos: {}) on channel {}",
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measPowerMeasurementSequenceHWTrigger(
+                    self.session,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "meas_power_measurement_sequence_hw_trigger",
+        )
+    }
+
+    /// Block and measure a current measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn measure_current_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring current sequence (base: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measureCurrentMeasurementSequence(self.session, base_time, channel)
+            },
+            "measure_current_measurement_sequence",
+        )
+    }
+
+    /// Block and measure a hardware-triggered current measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn measure_current_measurement_sequence_hw_trigger(
+        &self,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring current sequence hw trigger (base: {}, hpos: {}) on channel {}",
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measureCurrentMeasurementSequenceHWTrigger(
+                    self.session,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "measure_current_measurement_sequence_hw_trigger",
+        )
+    }
+
+    /// Block and measure a voltage measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn measure_voltage_measurement_sequence(
+        &self,
+        base_time: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring voltage sequence (base: {}) on channel {}",
+            base_time,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measureVoltageMeasurementSequence(self.session, base_time, channel)
+            },
+            "measure_voltage_measurement_sequence",
+        )
+    }
+
+    /// Block and measure a hardware-triggered voltage measurement sequence.
+    ///
+    /// **WARNING:** This function will block the calling thread while awaiting the hardware.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_time` - The base time parameter.
+    /// * `h_pos` - The horizontal position/delay parameter.
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn measure_voltage_measurement_sequence_hw_trigger(
+        &self,
+        base_time: u32,
+        h_pos: u32,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "measuring voltage sequence hw trigger (base: {}, hpos: {}) on channel {}",
+            base_time,
+            h_pos,
+            channel
+        );
+        self.check_status(
+            unsafe {
+                sys::TLPMX_measureVoltageMeasurementSequenceHWTrigger(
+                    self.session,
+                    base_time,
+                    h_pos,
+                    channel,
+                )
+            },
+            "measure_voltage_measurement_sequence_hw_trigger",
+        )
+    }
 }
