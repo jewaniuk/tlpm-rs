@@ -2,6 +2,15 @@ use crate::enums::TlpmAttribute;
 use crate::error::TlpmError;
 use crate::{PowerMeter, sys};
 
+/// Represents a single user power calibration point.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CalibrationPoint {
+    /// The wavelength in nanometers.
+    pub wavelength: f64,
+    /// The power correction factor.
+    pub factor: f64,
+}
+
 impl PowerMeter {
     impl_property!(
         numeric,
@@ -379,5 +388,176 @@ impl PowerMeter {
             "get_power_calibration_points_state",
         )?;
         Ok(state == crate::VI_TRUE)
+    }
+
+    /// Retrieve the metadata for a specific User Power Calibration point array.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The calibration array index (1 to 5).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing:
+    /// `(serial_number, calibration_date, point_count, author, sensor_position)`
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_power_calibration_points_information(
+        &self,
+        index: u16,
+        channel: u16,
+    ) -> Result<(String, String, u16, String, u16), TlpmError> {
+        tracing::debug!(
+            "getting power calibration info for index {} on channel {}",
+            index,
+            channel
+        );
+        let mut snr = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut cal_date = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut author = [0i8; sys::TLPM_BUFFER_SIZE as usize];
+        let mut point_count: u16 = 0;
+        let mut sensor_pos: u16 = 0;
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPowerCalibrationPointsInformation(
+                    self.session,
+                    index,
+                    snr.as_mut_ptr(),
+                    cal_date.as_mut_ptr(),
+                    &mut point_count,
+                    author.as_mut_ptr(),
+                    &mut sensor_pos,
+                    channel,
+                )
+            },
+            "get_power_calibration_points_information",
+        )?;
+
+        let to_string = |buf: &[i8]| -> String {
+            unsafe { std::ffi::CStr::from_ptr(buf.as_ptr()) }
+                .to_string_lossy()
+                .into_owned()
+        };
+
+        Ok((
+            to_string(&snr),
+            to_string(&cal_date),
+            point_count,
+            to_string(&author),
+            sensor_pos,
+        ))
+    }
+
+    /// Retrieve the configured power calibration points for a given index.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The calibration array index (1 to 5).
+    /// * `point_count` - The number of points to read (can be queried via `get_power_calibration_points_information`).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Returns
+    ///
+    /// A vector of `CalibrationPoint` structs.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::VisaError` if the device responds with an error code.
+    pub fn get_power_calibration_points(
+        &self,
+        index: u16,
+        point_count: u16,
+        channel: u16,
+    ) -> Result<Vec<CalibrationPoint>, TlpmError> {
+        tracing::debug!(
+            "getting {} calibration points for index {} on channel {}",
+            point_count,
+            index,
+            channel
+        );
+        let mut wavelengths = vec![0.0f64; point_count as usize];
+        let mut factors = vec![0.0f64; point_count as usize];
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_getPowerCalibrationPoints(
+                    self.session,
+                    index,
+                    point_count,
+                    wavelengths.as_mut_ptr(),
+                    factors.as_mut_ptr(),
+                    channel,
+                )
+            },
+            "get_power_calibration_points",
+        )?;
+
+        let points = wavelengths
+            .into_iter()
+            .zip(factors.into_iter())
+            .map(|(w, f)| CalibrationPoint {
+                wavelength: w,
+                factor: f,
+            })
+            .collect();
+
+        Ok(points)
+    }
+
+    /// Write a new set of user power calibration points to the instrument.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The calibration array index (1 to 5).
+    /// * `points` - A slice of `CalibrationPoint` structs to upload.
+    /// * `author` - The author or creator of this calibration data.
+    /// * `sensor_position` - The physical sensor switch position (e.g., 1 or 2 for Thorlabs S130C).
+    /// * `channel` - The sensor channel (typically `1`).
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::StringConversion` if the author string is invalid,
+    /// or `TlpmError::VisaError` if the device responds with an error code.
+    pub fn set_power_calibration_points(
+        &self,
+        index: u16,
+        points: &[CalibrationPoint],
+        author: &str,
+        sensor_position: u16,
+        channel: u16,
+    ) -> Result<(), TlpmError> {
+        tracing::debug!(
+            "setting {} calibration points for index {} on channel {}",
+            points.len(),
+            index,
+            channel
+        );
+
+        let c_author = std::ffi::CString::new(author)
+            .map_err(|_| TlpmError::StringConversion("invalid author string".to_string()))?;
+
+        // Unpack the struct into the contiguous parallel arrays required by the C-API
+        let mut wavelengths: Vec<f64> = points.iter().map(|p| p.wavelength).collect();
+        let mut factors: Vec<f64> = points.iter().map(|p| p.factor).collect();
+
+        self.check_status(
+            unsafe {
+                sys::TLPMX_setPowerCalibrationPoints(
+                    self.session,
+                    index,
+                    points.len() as u16,
+                    wavelengths.as_mut_ptr(),
+                    factors.as_mut_ptr(),
+                    c_author.as_ptr() as *mut _,
+                    sensor_position,
+                    channel,
+                )
+            },
+            "set_power_calibration_points",
+        )
     }
 }
