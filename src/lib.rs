@@ -2,6 +2,7 @@
 mod macros;
 
 pub mod correction;
+pub mod discovery;
 pub mod enums;
 pub mod error;
 pub mod filter;
