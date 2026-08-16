@@ -51,6 +51,71 @@ impl PowerMeter {
         })
     }
 
+    /// Initialize a new encrypted session with the Thorlabs power meter.
+    ///
+    /// # Arguments
+    ///
+    /// * `resource_name` - The VISA resource string (e.g., "USB0::0x1313::...").
+    /// * `id_query` - `true` to perform an ID query during initialization.
+    /// * `reset_device` - `true` to reset the device to its default state during initialization.
+    /// * `password` - The password string required to unlock the encrypted connection.
+    ///
+    /// # Returns
+    ///
+    /// A new, authenticated `PowerMeter` instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TlpmError::InvalidResourceName` or `TlpmError::StringConversion` for invalid strings,
+    /// or a `TlpmError::VisaError` if the initialization or authentication fails.
+    pub fn new_with_encryption(
+        resource_name: &str,
+        id_query: bool,
+        reset_device: bool,
+        password: &str,
+    ) -> Result<Self, TlpmError> {
+        tracing::debug!(
+            "initializing encrypted power meter session at resource: {}",
+            resource_name
+        );
+
+        let c_resource_name = CString::new(resource_name)
+            .map_err(|_| TlpmError::InvalidResourceName(resource_name.to_string()))?;
+
+        let c_password = CString::new(password)
+            .map_err(|_| TlpmError::StringConversion("invalid password string".to_string()))?;
+
+        let mut session: sys::ViSession = 0;
+        let c_id_query = if id_query { VI_TRUE } else { VI_FALSE };
+        let c_reset_device = if reset_device { VI_TRUE } else { VI_FALSE };
+
+        let status = unsafe {
+            sys::TLPMX_initWithEncryption(
+                c_resource_name.as_ptr() as *mut _,
+                c_id_query,
+                c_reset_device,
+                c_password.as_ptr() as *mut _,
+                &mut session,
+            )
+        };
+
+        // Thorlabs VISA functions return less than 0 for errors
+        if status < 0 {
+            return Err(TlpmError::VisaError {
+                code: status,
+                action: "new_with_encryption".to_string(),
+                message: "initialization with encryption failed".to_string(),
+            });
+        }
+
+        tracing::debug!("successfully initialized encrypted session: {}", session);
+
+        Ok(Self {
+            session,
+            _marker: PhantomData,
+        })
+    }
+
     /// Reset the Thorlabs power meter to its default parameters.
     ///
     /// # Errors
