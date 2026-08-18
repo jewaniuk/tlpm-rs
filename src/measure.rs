@@ -1,6 +1,12 @@
 use crate::error::TlpmError;
 use crate::{PowerMeter, sys};
 
+/// Data returned from a burst array measurement (timestamps, values1, values2).
+pub type BurstArrayData = (Vec<u32>, Vec<f32>, Vec<f32>);
+
+/// Data returned from a hardware sequence measurement (timestamps, values1, values2).
+pub type SequenceData = (Vec<f32>, Vec<f32>, Vec<f32>);
+
 impl PowerMeter {
     impl_measure!(
         meas_power,
@@ -715,7 +721,7 @@ impl PowerMeter {
         &self,
         start_index: u32,
         sample_count: u32,
-    ) -> Result<(Vec<u32>, Vec<f32>, Vec<f32>), TlpmError> {
+    ) -> Result<BurstArrayData, TlpmError> {
         tracing::debug!(
             "getting burst array samples (start: {}, count: {})",
             start_index,
@@ -1025,7 +1031,7 @@ impl PowerMeter {
         &self,
         base_time: u32,
         expected_count: usize,
-    ) -> Result<(Vec<f32>, Vec<f32>, Vec<f32>), TlpmError> {
+    ) -> Result<SequenceData, TlpmError> {
         tracing::debug!(
             "getting measurement sequence (base time: {}, expected: {})",
             base_time,

@@ -498,7 +498,7 @@ impl PowerMeter {
 
         let points = wavelengths
             .into_iter()
-            .zip(factors.into_iter())
+            .zip(factors)
             .map(|(w, f)| CalibrationPoint {
                 wavelength: w,
                 factor: f,
