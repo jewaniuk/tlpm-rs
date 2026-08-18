@@ -1,18 +1,19 @@
 #[macro_use]
 mod macros;
 
-pub mod correction;
 pub mod discovery;
 pub mod enums;
 pub mod error;
-pub mod filter;
-pub mod interface;
-pub mod io;
-pub mod measure;
-pub mod range;
-pub mod sensor;
-pub mod session;
-pub mod system;
+
+mod correction;
+mod filter;
+mod interface;
+mod io;
+mod measure;
+mod range;
+mod sensor;
+mod session;
+mod system;
 
 use std::marker::PhantomData;
 
